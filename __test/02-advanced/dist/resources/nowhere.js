@@ -1,0 +1,1 @@
+!function(e){e["*pointers"]("&registry")({"MicroFrontend::resources/nowhere.js":[function(e,n,s){n.message="Nothing's here!"},{}]}),e["*pointers"]("&require")("MicroFrontend::resources/nowhere.js")}("undefined"!=typeof window?window:this);

@@ -1,0 +1,1 @@
+!function(e){e["*pointers"]("&registry")({"&/dynamic/colors.json":[function(e,n,i){n.default={primary:"#2563eb",secondary:"#6b7280",accent:"#10b981"}},{}]}),e["*pointers"]("&require")("&/dynamic/colors.json")}("undefined"!=typeof window?window:this);

@@ -1,0 +1,1 @@
+!function(e){e["*pointers"]("&registry")({"&/html/greetings.html":[function(e,t,i){t.default="<h2>[GREETINGS.HTML]: Hello, World!</h2>"},{}]}),e["*pointers"]("&require")("&/html/greetings.html")}("undefined"!=typeof window?window:this);

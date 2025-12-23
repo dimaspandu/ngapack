@@ -1,0 +1,1 @@
+!function(e){e["*pointers"]("&registry")({"MainFrontend::services/brokers/subscriber.js":[function(e,s,r){s.getAMessage=function(){return"[PASS => getAMessage from services/brokers/subscriber.js]: Hello, World!"}},{}]}),e["*pointers"]("&require")("MainFrontend::services/brokers/subscriber.js")}("undefined"!=typeof window?window:this);
