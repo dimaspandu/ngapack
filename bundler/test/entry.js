@@ -1,6 +1,6 @@
 // import runTest from "./tester.js";
-import greetings from "./greetings.js";
 import Unnecessary from "./internal/unnecessary.js";
+import greetings from "./greetings.js";
 
 /**
  * Test runner for verifying correct operation of module loading features:
@@ -51,16 +51,16 @@ async function runAllTests() {
         }
     `);
 
-    // // 5. Remote microfrontend test
-    // var somewhere = await import("https://www.microfrontends.com/resources/somewhere.js", {
-    //   namespace: "MicroFrontend"
-    // });
-    // runTest(
-    //   "Somewhere Dynamic Module (Microfrontend)",
-    //   somewhere.default,
-    //   "Hello! I'm from somewhere!",
-    //   true
-    // );
+    // 5. Remote microfrontend test
+    var somewhere = await import("https://www.microfrontends.com/resources/somewhere.js", {
+      namespace: "MicroFrontend"
+    });
+    runTest(
+      "Somewhere Dynamic Module (Microfrontend)",
+      somewhere.default,
+      "Hello! I'm from somewhere!",
+      true
+    );
 
   } catch (err) {
     // Capture any dynamic import failure

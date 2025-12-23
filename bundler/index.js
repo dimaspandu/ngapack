@@ -148,34 +148,26 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
       const relativePath = dependency.module;
       const absolutePath = normalizeId(path.join(dirname, relativePath));
 
-      if (dependency.type === "dynamic") {
-        if (/^https?:\/\//.test(relativePath)) {
-          //
-        } else {
-          if (!seen[absolutePath]) {
-            if (
-              [".js", ".mjs", ".json", ".css", ".svg", ".xml", ".html"].includes(path.extname(absolutePath))
-            ) {
-              logger.info(`[GRAPH] Adding dependency module: ${absolutePath}`);
-              const nextNode = createNode(absolutePath, true);
-              seen[absolutePath] = nextNode;
-              queue.push(nextNode);
-            } else {
-              logger.info(`[GRAPH] Copying asset dependency: ${absolutePath}`);
-              const relativeToEntry = path.relative(path.dirname(entry), absolutePath);
-              const outPath = normalizeId(path.join(outputDir, relativeToEntry));
+      if (/^https?:\/\//.test(relativePath)) {
+        const actualUrl = new URL(relativePath);
 
-              processAndCopyFile(absolutePath, outPath).catch(logger.error);
-            }
-          }
-        }
+        // Clean and normalize namespace; use "&" as default if empty or missing
+        const actualNamespace = dependency.assertions.namespace || defaultNamespace;
+
+        // Compose module ID like "Namespace::path/to/file.js"
+        const moduleId = `${actualNamespace}::${actualUrl.pathname.slice(1)}`;
+
+        // Map the result to the dependency graph
+        node.mapping[relativePath] = moduleId;
+        
+        logger.warn(`[GRAPH] External URL skipped: ${relativePath}`);
       } else {
         if (!seen[absolutePath]) {
           if (
             [".js", ".mjs", ".json", ".css", ".svg", ".xml", ".html"].includes(path.extname(absolutePath))
           ) {
             logger.info(`[GRAPH] Adding dependency module: ${absolutePath}`);
-            const nextNode = createNode(absolutePath);
+            const nextNode = createNode(absolutePath, dependency.type === "dynamic");
             seen[absolutePath] = nextNode;
             queue.push(nextNode);
           } else {
@@ -186,77 +178,13 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
             processAndCopyFile(absolutePath, outPath).catch(logger.error);
           }
         }
-      }
 
-      if (seen[absolutePath]) {
-        node.mapping[relativePath] = absolutePath.replace(`${dirname}/`, `${defaultNamespace}::`);
+        if (seen[absolutePath]) {
+          const dependencyDir = path.dirname(absolutePath);
+          node.mapping[relativePath] = absolutePath.replace(`${dependencyDir}/`, `${defaultNamespace}::`);
+        }
       }
     }
-      // if (/^https?:\/\//.test(relativePath)) {
-      //   // Determine separator based on marker (<HTTP> or <HTTPS>)
-      //   const separator = relativePath.includes("<HTTPS>")
-      //     ? "/<HTTPS>"
-      //     : relativePath.includes("<HTTP>")
-      //     ? "/<HTTP>"
-      //     : null;
-
-      //   if (separator) {
-      //     // Split into actual path and namespace section
-      //     const [actualPath, namespacePart] = relativePath.split(separator);
-
-      //     const actualUrl = new URL(actualPath);
-
-      //     // Clean and normalize namespace; use "&" as default if empty or missing
-      //     const actualNamespace =
-      //       namespacePart?.replace(/^\/+/, "").trim() || defaultNamespace;
-
-      //     // Compose module ID like "Namespace::path/to/file.js"
-      //     const moduleId = `${actualNamespace}::${actualUrl.pathname.slice(1)}`;
-
-      //     // Map the result to the dependency graph
-      //     node.mapping[relativePath] = moduleId + separator;
-
-      //     logger.warn(`[GRAPH] External URL skipped: ${relativePath}`);
-      //   }
-      // } else {
-      //   const absolutePath = normalizeId(path.join(dirname, relativePath));
-      //   const separated = absolutePath.includes("<HTTP>") || absolutePath.includes("<HTTPS>");
-
-      //   let separator = null;
-      //   if (absolutePath.includes("<HTTP>")) {
-      //     separator = "/<HTTP>";
-      //   } else if (absolutePath.includes("<HTTPS>")) {
-      //     separator = "/<HTTPS>";
-      //   }
-
-      //   const actualPath = separated ? absolutePath.split(separator)[0] : absolutePath;
-
-      //   if (!seen[actualPath]) {
-      //     if (
-      //       [".js", ".mjs", ".json", ".css", ".svg", ".xml", ".html"].includes(path.extname(actualPath))
-      //     ) {
-      //       logger.info(`[GRAPH] Adding dependency module: ${actualPath}`);
-      //       const nextNode = createNode(actualPath);
-      //       seen[actualPath] = nextNode;
-      //       queue.push(nextNode);
-      //     } else {
-      //       logger.info(`[GRAPH] Copying asset dependency: ${actualPath}`);
-      //       const relativeToEntry = path.relative(path.dirname(entry), actualPath);
-      //       const outPath = normalizeId(path.join(outputDir, relativeToEntry));
-
-      //       processAndCopyFile(actualPath, outPath).catch(logger.error);
-      //     }
-      //   }
-
-      //   if (seen[actualPath]) {
-      //     node.mapping[relativePath] = separated ? absolutePath : seen[actualPath].id;
-      //   }
-
-      //   if (separated) {
-      //     logger.warn(`[GRAPH] Marked separated module: ${actualPath}`);
-      //     seen[actualPath].separated = true;
-      //   }
-      // }
   }
 
   logger.success("[GRAPH] Dependency graph built successfully.");
@@ -369,6 +297,7 @@ export default async function main({
   // Step 4: Build the dependency graph from the entry file
   // This includes analyzing modules, their dependencies, and preparing transformed code
   const graph = createGraph(entryFile, outputFilePath, namespace);
+  // console.log("graph", JSON.stringify(graph, null, 1));
   console.log("graph", graph);
 
   // // Step 5: Set the base directory only once if not already set
