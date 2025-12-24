@@ -771,6 +771,209 @@ runTest(
     { type: "punctuator", value: ")" },
     { type: "punctuator", value: ")" },
     { type: "punctuator", value: ";" }
+  ]
+);
+
+
+/* ============================================================================ 
+ * 9. EXPORT DEFAULT CASES FOR VARIOUS TYPES 
+ * ============================================================================ */
+
+// Export default dynamic value (dynamicValue1)
+runTest(
+  "Export default dynamicValue1",
+  runExportTranspileTest([
+    { type: "keyword", value: "export" },
+    { type: "keyword", value: "default" },
+    { type: "identifier", value: "dynamicValue1" }
+  ]),
+  [
+    { type: "identifier", value: "exports" },
+    { type: "punctuator", value: "." },
+    { type: "keyword", value: "default" },
+    { type: "punctuator", value: "=" },
+    { type: "identifier", value: "dynamicValue1" },
+    { type: "punctuator", value: ";" }
+  ]
+);
+
+// Export default dynamic value (dynamicValue2)
+runTest(
+  "Export default dynamicValue2",
+  runExportTranspileTest([
+    { type: "keyword", value: "export" },
+    { type: "keyword", value: "default" },
+    { type: "identifier", value: "dynamicValue2" },
+    { type: "punctuator", value: ";" }
+  ]),
+  [
+    { type: "identifier", value: "exports" },
+    { type: "punctuator", value: "." },
+    { type: "keyword", value: "default" },
+    { type: "punctuator", value: "=" },
+    { type: "identifier", value: "dynamicValue2" },
+    { type: "punctuator", value: ";" }
+  ]
+);
+
+// Export default string literal "Hello, World!"
+runTest(
+  "Export default string literal",
+  runExportTranspileTest([
+    { type: "keyword", value: "export" },
+    { type: "keyword", value: "default" },
+    { type: "string", value: '"Hello, World!"' },
+    { type: "punctuator", value: ";" }
+  ]),
+  [
+    { type: "identifier", value: "exports" },
+    { type: "punctuator", value: "." },
+    { type: "keyword", value: "default" },
+    { type: "punctuator", value: "=" },
+    { type: "string", value: '"Hello, World!"' },
+    { type: "punctuator", value: ";" }
+  ]
+);
+
+// Export default number literal 999
+runTest(
+  "Export default number literal",
+  runExportTranspileTest([
+    { type: "keyword", value: "export" },
+    { type: "keyword", value: "default" },
+    { type: "number", value: "999" },
+    { type: "punctuator", value: ";" }
+  ]),
+  [
+    { type: "identifier", value: "exports" },
+    { type: "punctuator", value: "." },
+    { type: "keyword", value: "default" },
+    { type: "punctuator", value: "=" },
+    { type: "number", value: "999" },
+    { type: "punctuator", value: ";" }
+  ]
+);
+
+// Export default true
+runTest(
+  "Export default true",
+  runExportTranspileTest([
+    { type: "keyword", value: "export" },
+    { type: "keyword", value: "default" },
+    { type: "identifier", value: "true" },
+    { type: "punctuator", value: ";" }
+  ]),
+  [
+    { type: "identifier", value: "exports" },
+    { type: "punctuator", value: "." },
+    { type: "keyword", value: "default" },
+    { type: "punctuator", value: "=" },
+    { type: "identifier", value: "true" },
+    { type: "punctuator", value: ";" }
+  ]
+);
+
+// Export default null
+runTest(
+  "Export default null",
+  runExportTranspileTest([
+    { type: "keyword", value: "export" },
+    { type: "keyword", value: "default" },
+    { type: "identifier", value: "null" },
+    { type: "punctuator", value: ";" }
+  ]),
+  [
+    { type: "identifier", value: "exports" },
+    { type: "punctuator", value: "." },
+    { type: "keyword", value: "default" },
+    { type: "punctuator", value: "=" },
+    { type: "identifier", value: "null" },
+    { type: "punctuator", value: ";" }
+  ]
+);
+
+// Export default undefined
+runTest(
+  "Export default undefined",
+  runExportTranspileTest([
+    { type: "keyword", value: "export" },
+    { type: "keyword", value: "default" },
+    { type: "identifier", value: "undefined" },
+    { type: "punctuator", value: ";" }
+  ]),
+  [
+    { type: "identifier", value: "exports" },
+    { type: "punctuator", value: "." },
+    { type: "keyword", value: "default" },
+    { type: "punctuator", value: "=" },
+    { type: "identifier", value: "undefined" },
+    { type: "punctuator", value: ";" }
+  ]
+);
+
+// Export default empty object {}
+runTest(
+  "Export default empty object",
+  runExportTranspileTest([
+    { type: "keyword", value: "export" },
+    { type: "keyword", value: "default" },
+    { type: "punctuator", value: "{" },
+    { type: "punctuator", value: "}" },
+    { type: "punctuator", value: ";" }
+  ]),
+  [
+    { type: "identifier", value: "exports" },
+    { type: "punctuator", value: "." },
+    { type: "keyword", value: "default" },
+    { type: "punctuator", value: "=" },
+    { type: "punctuator", value: "{" },
+    { type: "punctuator", value: "}" },
+    { type: "punctuator", value: ";" }
+  ]
+);
+
+// Export default empty object with dynamicValue1
+runTest(
+  "Export default object with dynamicValue1",
+  runExportTranspileTest([
+    { type: "keyword", value: "export" },
+    { type: "keyword", value: "default" },
+    { type: "punctuator", value: "{" },
+    { type: "identifier", value: "dynamicValue1" },
+    { type: "punctuator", value: "}" }
+  ]),
+  [
+    { type: "identifier", value: "exports" },
+    { type: "punctuator", value: "." },
+    { type: "keyword", value: "default" },
+    { type: "punctuator", value: "=" },
+    { type: "punctuator", value: "{" },
+    { type: "identifier", value: "dynamicValue1" },
+    { type: "punctuator", value: "}" },
+    { type: "punctuator", value: ";" }
+  ]
+);
+
+// Export default object with dynamicValue2
+runTest(
+  "Export default object with dynamicValue2",
+  runExportTranspileTest([
+    { type: "keyword", value: "export" },
+    { type: "keyword", value: "default" },
+    { type: "punctuator", value: "{" },
+    { type: "identifier", value: "dynamicValue2" },
+    { type: "punctuator", value: "}" },
+    { type: "punctuator", value: ";" }
+  ]),
+  [
+    { type: "identifier", value: "exports" },
+    { type: "punctuator", value: "." },
+    { type: "keyword", value: "default" },
+    { type: "punctuator", value: "=" },
+    { type: "punctuator", value: "{" },
+    { type: "identifier", value: "dynamicValue2" },
+    { type: "punctuator", value: "}" },
+    { type: "punctuator", value: ";" }
   ],
   true
 );

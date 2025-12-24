@@ -1,3 +1,4 @@
+import getArrayLiteralsEndIndex from "../../utils/getArrayLiteralsEndIndex.js";
 import getDestructureEndIndex from "../../utils/getDestructureEndIndex.js";
 import getExportBlockEndIndex from "../../utils/getExportBlockEndIndex.js";
 import getObjectLiteralsEndIndex from "../../utils/getObjectLiteralsEndIndex.js";
@@ -583,10 +584,7 @@ export default function transpileExportTokensToCJS(tokens) {
       next(1).type === "keyword" &&
       next(1).value === "default" &&
       next(2).type === "punctuator" &&
-      next(2).value === "{" &&
-      (next(3).type === "identifier" || next(3).type === "string") &&
-      next(4).type === "punctuator" &&
-      next(4).value === ":"
+      next(2).value === "{"
     ) {
       bufferTokens.push({ type: "identifier", value: "exports" });
 
@@ -594,6 +592,32 @@ export default function transpileExportTokensToCJS(tokens) {
       tokens.splice(idx + 3, 0, { type: "punctuator", value: "=" });
 
       const endIndex = getObjectLiteralsEndIndex(tokens, idx + 4);
+      const after = tokens[endIndex + 1];
+
+      if (!after || (after && !isSemi(after))) {
+        tokens.splice(endIndex + 1, 0, { type: "punctuator", value: ";" });
+      }
+    }
+
+    // export default [ ... ]
+    else if (
+      cur.type === "keyword" &&
+      cur.value === "export" &&
+      next(1) &&
+      next(2) &&
+      next(3) &&
+      next(4) &&
+      next(1).type === "keyword" &&
+      next(1).value === "default" &&
+      next(2).type === "punctuator" &&
+      next(2).value === "["
+    ) {
+      bufferTokens.push({ type: "identifier", value: "exports" });
+
+      tokens.splice(idx + 1, 0, { type: "punctuator", value: "." });
+      tokens.splice(idx + 3, 0, { type: "punctuator", value: "=" });
+
+      const endIndex = getArrayLiteralsEndIndex(tokens, idx + 4);
       const after = tokens[endIndex + 1];
 
       if (!after || (after && !isSemi(after))) {

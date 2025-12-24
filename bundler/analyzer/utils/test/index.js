@@ -1,3 +1,4 @@
+await import("./getArrayLiteralsEndIndex.test.js");
 await import("./getDestructureEndIndex.test.js");
 await import("./getDynamicImportEndIndex.test.js");
 await import("./getExportBlockEndIndex.test.js");

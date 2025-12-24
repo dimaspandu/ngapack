@@ -162,6 +162,137 @@ runTest(
     ],
     2
   ),
-  4,
+  4
+);
+
+// -------------------------------------------------------
+// 9. Simple Array Destructure: [a, b]
+// -------------------------------------------------------
+runTest(
+  "Simple Array",
+  getDestructureEndIndex(
+    [
+      { type: "punctuator", value: "[" },   // 0
+      { type: "identifier", value: "a" },   // 1
+      { type: "punctuator", value: "," },   // 2
+      { type: "identifier", value: "b" },   // 3
+      { type: "punctuator", value: "]" }    // 4
+    ],
+    0
+  ),
+  4
+);
+
+// -------------------------------------------------------
+// 10. Nested Array: [a, [b, c]]
+// -------------------------------------------------------
+runTest(
+  "Nested Array",
+  getDestructureEndIndex(
+    [
+      { type: "punctuator", value: "[" },   // 0
+      { type: "identifier", value: "a" },   // 1
+      { type: "punctuator", value: "," },   // 2
+      { type: "punctuator", value: "[" },   // 3
+      { type: "identifier", value: "b" },   // 4
+      { type: "punctuator", value: "," },   // 5
+      { type: "identifier", value: "c" },   // 6
+      { type: "punctuator", value: "]" },   // 7
+      { type: "punctuator", value: "]" }    // 8
+    ],
+    0
+  ),
+  8
+);
+
+// -------------------------------------------------------
+// 11. Array with Object Inside: [a, { b }]
+// -------------------------------------------------------
+runTest(
+  "Array With Object",
+  getDestructureEndIndex(
+    [
+      { type: "punctuator", value: "[" },   // 0
+      { type: "identifier", value: "a" },   // 1
+      { type: "punctuator", value: "," },   // 2
+      { type: "punctuator", value: "{" },   // 3
+      { type: "identifier", value: "b" },   // 4
+      { type: "punctuator", value: "}" },   // 5
+      { type: "punctuator", value: "]" }    // 6
+    ],
+    0
+  ),
+  6
+);
+
+// -------------------------------------------------------
+// 12. Object With Array Inside: { a: [b, c] }
+// -------------------------------------------------------
+runTest(
+  "Object With Array",
+  getDestructureEndIndex(
+    [
+      { type: "punctuator", value: "{" },   // 0
+      { type: "identifier", value: "a" },   // 1
+      { type: "punctuator", value: ":" },   // 2
+      { type: "punctuator", value: "[" },   // 3
+      { type: "identifier", value: "b" },   // 4
+      { type: "punctuator", value: "," },   // 5
+      { type: "identifier", value: "c" },   // 6
+      { type: "punctuator", value: "]" },   // 7
+      { type: "punctuator", value: "}" }    // 8
+    ],
+    0
+  ),
+  8
+);
+
+// -------------------------------------------------------
+// 13. Deep Mixed Nesting
+// { a: [b, { c: [d] }] }
+// -------------------------------------------------------
+runTest(
+  "Deep Mixed Nesting",
+  getDestructureEndIndex(
+    [
+      { type: "punctuator", value: "{" },   // 0
+      { type: "identifier", value: "a" },   // 1
+      { type: "punctuator", value: ":" },   // 2
+      { type: "punctuator", value: "[" },   // 3
+      { type: "identifier", value: "b" },   // 4
+      { type: "punctuator", value: "," },   // 5
+      { type: "punctuator", value: "{" },   // 6
+      { type: "identifier", value: "c" },   // 7
+      { type: "punctuator", value: ":" },   // 8
+      { type: "punctuator", value: "[" },   // 9
+      { type: "identifier", value: "d" },   // 10
+      { type: "punctuator", value: "]" },   // 11
+      { type: "punctuator", value: "}" },   // 12
+      { type: "punctuator", value: "]" },   // 13
+      { type: "punctuator", value: "}" }    // 14
+    ],
+    0
+  ),
+  14
+);
+
+// -------------------------------------------------------
+// 14. Array Missing Closing Bracket => null
+// -------------------------------------------------------
+runTest(
+  "Array Missing Closing",
+  getDestructureEndIndex(
+    [
+      { type: "punctuator", value: "[" },
+      { type: "identifier", value: "a" },
+      { type: "punctuator", value: "," },
+      { type: "punctuator", value: "[" },
+      { type: "identifier", value: "b" }
+      // missing closing ] ]
+    ],
+    0
+  ),
+  null,
   true
 );
+

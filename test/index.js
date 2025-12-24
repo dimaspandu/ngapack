@@ -9,7 +9,7 @@ import { fileURLToPath } from "url";
 
 // Import the main bundler function from the root index.js file
 // The bundler is expected to take configuration options and produce a bundle output
-import bundler from "../index.js";
+import bundler from "../bundler/index.js";
 
 // Derive the absolute path of the current file using the ES module pattern
 // `fileURLToPath(import.meta.url)` converts the module's URL into a file system path string
