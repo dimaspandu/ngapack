@@ -120,7 +120,9 @@ function createNode(filename, separated = false) {
 
   return {
     id,
+    key: null,
     filename: id,
+    dependent: [],
     dependencies: dependencies.values,
     code: productionCode,
     separated
@@ -139,6 +141,9 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
   const queue = [entryNode];
   const seen = { [entryNode.id]: entryNode };
   const outputDir = normalizeId(path.dirname(outputFilePath));
+
+  const selfDir = path.dirname(entryNode.id);
+  entryNode.key = entryNode.id.replace(`${selfDir}/`, `${defaultNamespace}::`);
 
   for (const node of queue) {
     node.mapping = {};
@@ -162,13 +167,16 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
         
         logger.warn(`[GRAPH] External URL skipped: ${relativePath}`);
       } else {
-        if (!seen[absolutePath]) {
+        // if (!seen[absolutePath]) {
           if (
             [".js", ".mjs", ".json", ".css", ".svg", ".xml", ".html"].includes(path.extname(absolutePath))
           ) {
             logger.info(`[GRAPH] Adding dependency module: ${absolutePath}`);
             const nextNode = createNode(absolutePath, dependency.type === "dynamic");
-            seen[absolutePath] = nextNode;
+            nextNode.dependent = node.id;
+            // seen[absolutePath] = nextNode;
+            const dependencyDir = path.dirname(absolutePath);
+            nextNode.key = absolutePath.replace(`${dependencyDir}/`, `${defaultNamespace}::`);
             queue.push(nextNode);
           } else {
             logger.info(`[GRAPH] Copying asset dependency: ${absolutePath}`);
@@ -177,12 +185,12 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
 
             processAndCopyFile(absolutePath, outPath).catch(logger.error);
           }
-        }
+        // }
 
-        if (seen[absolutePath]) {
+        // if (seen[absolutePath]) {
           const dependencyDir = path.dirname(absolutePath);
           node.mapping[relativePath] = absolutePath.replace(`${dependencyDir}/`, `${defaultNamespace}::`);
-        }
+        // }
       }
     }
   }
@@ -191,44 +199,119 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
   return queue;
 }
 
+const bundleFiles = {};
+
+function createBundle(graph, host) {
+  bundleFiles[graph[0].id] = {
+    files: [graph[0]],
+    modules: ``,
+    codes: ``
+  };
+
+  for (let i = 1; i < graph.length; i++) {
+    const id = graph[i].id;
+    const dynamic = graph[i].separated;
+
+    if (!bundleFiles[id] && dynamic) {
+      bundleFiles[id] = {
+        files: [graph[i]],
+        modules: ``,
+        codes: ``
+      };
+    }
+  }
+
+  for (let i = 1; i < graph.length; i++) {
+    const id = graph[i].id;
+
+    if (!bundleFiles[id]) {
+      const dependentId = graph[i].dependent;
+      bundleFiles[dependentId].files.push(graph[i]);
+    }
+  }
+
+  for (const id in bundleFiles) {
+    const theBundle = bundleFiles[id];
+    // console.log("theBundle", theBundle);
+
+    for (let i in theBundle.files) {
+      const mod = theBundle.files[i];
+
+      theBundle.modules += `"${mod.key}": [
+        function(require, exports, module, requireByHttp) {
+          ${mod.code}
+        },
+        ${JSON.stringify(mod.mapping)}
+      ],`;
+    }
+
+    const includeRuntime = id === graph[0].id;
+    const entryId = theBundle.files[0].key;
+
+    if (includeRuntime) {
+      logger.info("[BUNDLE] Including runtime in bundle.");
+      theBundle.codes = minifyJS(`
+        ${RUNTIME_CODE(host, `{${theBundle.modules.slice(0, -1)}}`, `"${entryId}"`)}
+      `);
+    } else {
+      logger.info("[BUNDLE] Generating lightweight bundle (no runtime).");
+      theBundle.codes = minifyJS(`
+        (function(global, modules, entry) {
+          global["*pointers"]("&registry")(modules);
+          global["*pointers"]("&require")(entry);
+        })(
+          typeof window !== "undefined" ? window : this,
+          {${theBundle.modules.slice(0, -1)}},
+          "${entryId}"
+        );
+      `);
+    }
+    
+    delete theBundle.files;
+    delete theBundle.modules;
+  }
+
+  console.log("bundleFiles", bundleFiles);
+}
+
 /**
  * bundle(graph, entryFilePath, host, includeRuntime)
  * ---------------------------------------------------
  * Generates the final bundle string.
  */
 function bundle(graph, entryFilePath, host, includeRuntime) {
-  logger.info(`[BUNDLE] Building bundle for entry: ${entryFilePath}`);
-  let modules = ``;
+  // logger.info(`[BUNDLE] Building bundle for entry: ${entryFilePath}`);
+  // let modules = ``;
 
-  graph.forEach((mod) => {
-    modules += `"${mod.id}": [
-      function(require, exports, module, requireByHttp) {
-        ${mod.code}
-      },
-      ${JSON.stringify(mod.mapping)}
-    ],`;
-  });
+  // graph.forEach((mod) => {
+  //   modules += `"${mod.id}": [
+  //     function(require, exports, module, requireByHttp) {
+  //       ${mod.code}
+  //     },
+  //     ${JSON.stringify(mod.mapping)}
+  //   ],`;
+  // });
 
-  const entryId = entryFilePath ? normalizeId(entryFilePath) : null;
+  // const entryId = entryFilePath ? normalizeId(entryFilePath) : null;
 
-  if (includeRuntime) {
-    logger.info("[BUNDLE] Including runtime in bundle.");
-    return minifyJS(`
-      ${RUNTIME_CODE(host, `{${modules.slice(0, -1)}}`, `"${entryId}"`)}
-    `);
-  } else {
-    logger.info("[BUNDLE] Generating lightweight bundle (no runtime).");
-    return minifyJS(`
-      (function(global, modules, entry) {
-        global["*pointers"]("&registry")(modules);
-        global["*pointers"]("&require")(entry);
-      })(
-        typeof window !== "undefined" ? window : this,
-        {${modules.slice(0, -1)}},
-        "${entryId}"
-      );
-    `);
-  }
+  // if (includeRuntime) {
+  //   logger.info("[BUNDLE] Including runtime in bundle.");
+  //   return minifyJS(`
+  //     ${RUNTIME_CODE(host, `{${modules.slice(0, -1)}}`, `"${entryId}"`)}
+  //   `);
+  // } else {
+  //   logger.info("[BUNDLE] Generating lightweight bundle (no runtime).");
+  //   return minifyJS(`
+  //     (function(global, modules, entry) {
+  //       global["*pointers"]("&registry")(modules);
+  //       global["*pointers"]("&require")(entry);
+  //     })(
+  //       typeof window !== "undefined" ? window : this,
+  //       {${modules.slice(0, -1)}},
+  //       "${entryId}"
+  //     );
+  //   `);
+  // }
 }
 
 /**
@@ -298,7 +381,9 @@ export default async function main({
   // This includes analyzing modules, their dependencies, and preparing transformed code
   const graph = createGraph(entryFile, outputFilePath, namespace);
   // console.log("graph", JSON.stringify(graph, null, 1));
-  console.log("graph", graph);
+  // console.log("graph", graph);
+
+  const code = createBundle(graph, host);
 
   // // Step 5: Set the base directory only once if not already set
   // // This path will later be used for namespace replacement in the bundled output
