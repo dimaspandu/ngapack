@@ -21,16 +21,17 @@ const __dirname = dirname(__filename);
 
 // Execute the bundler asynchronously with explicit input and output paths
 // - `entryFile`: The entry point for the bundler (source file to start dependency resolution)
-// - `outputFile`: The final bundled file to be generated in the "dist" directory
+// - `outputDirectory`: The final bundled file to be generated in the "dist" directory
 await bundler({
   entryFile: path.join(__dirname, "entry.js"),
-  outputFile: path.join(__dirname, "dist", "bundle.js")
+  outputDirectory: path.join(__dirname, "dist"),
+  outputFilename: "bundle.js"
 });
 
-// // Dynamically import a mock environment configuration script after bundling
-// // This script (`env.mock.js`) likely sets up environment variables or stubs for testing
-// await import("./env.mock.js");
+// Dynamically import a mock environment configuration script after bundling
+// This script (`env.mock.js`) likely sets up environment variables or stubs for testing
+await import("./env.mock.js");
 
-// // Dynamically import the freshly generated bundle to execute it within the same runtime
-// // This validates that the bundler output is functional and ready to run
-// await import("./dist/bundle.js");
+// Dynamically import the freshly generated bundle to execute it within the same runtime
+// This validates that the bundler output is functional and ready to run
+await import("./dist/bundle.js");

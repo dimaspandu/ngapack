@@ -6,6 +6,7 @@ import convertESMToCJSWithMeta from "./analyzer/lib/convertESMToCJSWithMeta/main
 import ensureJsExtension from "./helper/ensureJsExtension.js";
 import escapeForDoubleQuote from "./helper/escapeForDoubleQuote.js";
 import logger from "./helper/logger.js";
+import mapToDistPath from "./helper/mapToDistPath.js";
 import minifyCSS from "./analyzer/lib/minifier/css/main.js";
 import minifyHTML from "./analyzer/lib/minifier/html/main.js";
 import minifyJS from "./analyzer/lib/minifier/main.js";
@@ -139,7 +140,6 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
 
   const entryNode = createNode(entry);
   const queue = [entryNode];
-  const seen = { [entryNode.id]: entryNode };
   const outputDir = normalizeId(path.dirname(outputFilePath));
 
   const selfDir = path.dirname(entryNode.id);
@@ -167,30 +167,25 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
         
         logger.warn(`[GRAPH] External URL skipped: ${relativePath}`);
       } else {
-        // if (!seen[absolutePath]) {
-          if (
-            [".js", ".mjs", ".json", ".css", ".svg", ".xml", ".html"].includes(path.extname(absolutePath))
-          ) {
-            logger.info(`[GRAPH] Adding dependency module: ${absolutePath}`);
-            const nextNode = createNode(absolutePath, dependency.type === "dynamic");
-            nextNode.dependent = node.id;
-            // seen[absolutePath] = nextNode;
-            const dependencyDir = path.dirname(absolutePath);
-            nextNode.key = absolutePath.replace(`${dependencyDir}/`, `${defaultNamespace}::`);
-            queue.push(nextNode);
-          } else {
-            logger.info(`[GRAPH] Copying asset dependency: ${absolutePath}`);
-            const relativeToEntry = path.relative(path.dirname(entry), absolutePath);
-            const outPath = normalizeId(path.join(outputDir, relativeToEntry));
-
-            processAndCopyFile(absolutePath, outPath).catch(logger.error);
-          }
-        // }
-
-        // if (seen[absolutePath]) {
+        if (
+          [".js", ".mjs", ".json", ".css", ".svg", ".xml", ".html"].includes(path.extname(absolutePath))
+        ) {
+          logger.info(`[GRAPH] Adding dependency module: ${absolutePath}`);
+          const nextNode = createNode(absolutePath, dependency.type === "dynamic");
+          nextNode.dependent = node.id;
           const dependencyDir = path.dirname(absolutePath);
-          node.mapping[relativePath] = absolutePath.replace(`${dependencyDir}/`, `${defaultNamespace}::`);
-        // }
+          nextNode.key = absolutePath.replace(`${dependencyDir}/`, `${defaultNamespace}::`);
+          queue.push(nextNode);
+        } else {
+          logger.info(`[GRAPH] Copying asset dependency: ${absolutePath}`);
+          const relativeToEntry = path.relative(path.dirname(entry), absolutePath);
+          const outPath = normalizeId(path.join(outputDir, relativeToEntry));
+
+          processAndCopyFile(absolutePath, outPath).catch(logger.error);
+        }
+
+        const dependencyDir = path.dirname(absolutePath);
+        node.mapping[relativePath] = absolutePath.replace(`${dependencyDir}/`, `${defaultNamespace}::`);
       }
     }
   }
@@ -203,6 +198,8 @@ const bundleFiles = {};
 
 function createBundle(graph, host) {
   bundleFiles[graph[0].id] = {
+    entry: true,
+    path: graph[0].id,
     files: [graph[0]],
     modules: ``,
     codes: ``
@@ -214,6 +211,8 @@ function createBundle(graph, host) {
 
     if (!bundleFiles[id] && dynamic) {
       bundleFiles[id] = {
+        entry: false,
+        path: id,
         files: [graph[i]],
         modules: ``,
         codes: ``
@@ -245,7 +244,7 @@ function createBundle(graph, host) {
       ],`;
     }
 
-    const includeRuntime = id === graph[0].id;
+    const includeRuntime = theBundle.entry;
     const entryId = theBundle.files[0].key;
 
     if (includeRuntime) {
@@ -266,52 +265,12 @@ function createBundle(graph, host) {
         );
       `);
     }
-    
+
     delete theBundle.files;
     delete theBundle.modules;
   }
 
-  console.log("bundleFiles", bundleFiles);
-}
-
-/**
- * bundle(graph, entryFilePath, host, includeRuntime)
- * ---------------------------------------------------
- * Generates the final bundle string.
- */
-function bundle(graph, entryFilePath, host, includeRuntime) {
-  // logger.info(`[BUNDLE] Building bundle for entry: ${entryFilePath}`);
-  // let modules = ``;
-
-  // graph.forEach((mod) => {
-  //   modules += `"${mod.id}": [
-  //     function(require, exports, module, requireByHttp) {
-  //       ${mod.code}
-  //     },
-  //     ${JSON.stringify(mod.mapping)}
-  //   ],`;
-  // });
-
-  // const entryId = entryFilePath ? normalizeId(entryFilePath) : null;
-
-  // if (includeRuntime) {
-  //   logger.info("[BUNDLE] Including runtime in bundle.");
-  //   return minifyJS(`
-  //     ${RUNTIME_CODE(host, `{${modules.slice(0, -1)}}`, `"${entryId}"`)}
-  //   `);
-  // } else {
-  //   logger.info("[BUNDLE] Generating lightweight bundle (no runtime).");
-  //   return minifyJS(`
-  //     (function(global, modules, entry) {
-  //       global["*pointers"]("&registry")(modules);
-  //       global["*pointers"]("&require")(entry);
-  //     })(
-  //       typeof window !== "undefined" ? window : this,
-  //       {${modules.slice(0, -1)}},
-  //       "${entryId}"
-  //     );
-  //   `);
-  // }
+  return bundleFiles;
 }
 
 /**
@@ -330,14 +289,6 @@ function generateOutput(outputFilePath, bundleResult) {
 }
 
 /**
- * Shared bundler state map.
- * Each top-level bundler invocation will maintain its own internal state
- * (e.g., fixedBaseDir and fixedNamespace), which can be inherited by
- * recursive calls for separated modules.
- */
-const bundlerState = new WeakMap();
-
-/**
  * main(options)
  * ---------------
  * Entry point of the bundler.
@@ -348,105 +299,39 @@ const bundlerState = new WeakMap();
  * where it will inherit the parent bundler state to ensure consistency.
  */
 export default async function main({
-  host,
   entryFile,
-  outputFile,
-  outputDirectory,
+  host,
   namespace = "&",
-  includeRuntime = true,
-  parentState = null
+  outputDirectory,
+  outputFilename = "index.js"
 }) {
   // Step 1: Log the start of the bundling process for the given entry file
   logger.info(`[MAIN] Starting bundler for entry: ${entryFile}`);
 
-  // Step 2: Initialize or reuse bundler state
-  // Each top-level call to main() creates a new isolated state.
-  // Recursive calls (for separated modules) inherit the existing state.
-  let state = parentState;
-  if (!state) {
-    state = {
-      fixedBaseDir: "",
-      fixedNamespace: ""
-    };
-    bundlerState.set(main, state);
-  }
-
-  const resolvedOutputDirectory = outputDirectory ?? (outputFile ? path.dirname(outputFile) : process.cwd());
-
   // Step 3: Determine the full path of the output file
   // If no specific output file is provided, default to 'index.js' inside the output directory
-  const outputFilePath = ensureJsExtension(outputFile ? outputFile : path.join(resolvedOutputDirectory, "index.js"));
+  const outputFilePath = ensureJsExtension(path.join(outputDirectory, outputFilename));
 
   // Step 4: Build the dependency graph from the entry file
   // This includes analyzing modules, their dependencies, and preparing transformed code
   const graph = createGraph(entryFile, outputFilePath, namespace);
-  // console.log("graph", JSON.stringify(graph, null, 1));
-  // console.log("graph", graph);
 
-  const code = createBundle(graph, host);
+  // const bundle = createBundle(graph, host);
 
-  // // Step 5: Set the base directory only once if not already set
-  // // This path will later be used for namespace replacement in the bundled output
-  // if (!state.fixedBaseDir) {
-  //   state.fixedBaseDir = normalizeId(path.dirname(entryFile)) + "/";
-  //   logger.success(`[MAIN] Base directory locked: ${state.fixedBaseDir}`);
-  // }
-  // const baseDir = state.fixedBaseDir;
+  // for (const i in bundle) {
+  //   const mod = bundle[i];
+  //   const code = mod.codes;
 
-  // // Step 6: Split the graph into two groups: separated modules and the main application graph
-  // // Separated modules are those marked as needing isolated bundling (e.g., external sources)
-  // const separatedGraphs = graph.filter(module => module.separated);
-  // const mainGraph = separatedGraphs.length > 0 ? graph.filter(module => !module.separated) : graph;
+  //   logger.info("[MAIN] Minifying generated code...");
+  //   const result = true ? code : await uglifyJS(code);
 
-  // // Step 7: Generate the code bundle from the main graph
-  // // This will produce either a full bundle with runtime or a lightweight one based on config
-  // let code = minifyJS(bundle(mainGraph, entryFile, host, includeRuntime));
-
-  // // Step 8: Minify the generated bundle using a JS minifier for production optimization
-  // logger.info("[MAIN] Minifying generated code...");
-  // let result = await uglifyJS(code);
-
-  // // Step 9: Replace base directory paths in the code with the provided namespace
-  // // This helps make the output environment-agnostic and maintain unique module references
-  // if (!state.fixedNamespace) {
-  //   state.fixedNamespace = namespace === "&" ? "&::" : `${namespace}::`;
-  //   logger.success(`[MAIN] Namespace locked: ${state.fixedNamespace}`);
-  // }
-  // const fixedNamespace = state.fixedNamespace;
-
-  // result = result.replace(new RegExp(baseDir, "g"), fixedNamespace);
-
-  // // Step 10: Write the final bundled output to the specified output file
-  // generateOutput(outputFilePath, result);
-
-  // // Step 11: If there are separated modules, process each of them independently
-  // if (separatedGraphs.length > 0) {
-  //   logger.warn(`[MAIN] Detected ${separatedGraphs.length} separated module(s). Processing individually...`);
-
-  //   // Each separated module is bundled separately without the runtime
-  //   const subBundles = separatedGraphs.map(async (mod) => {
-  //     // Prepare paths for each separated module
-  //     const separatedEntryFile = mod.filename.replaceAll("/", "\\");
-  //     const separatedInputFilePath = mod.filename.split(state.fixedBaseDir).join("").replaceAll("/", "\\");
-  //     const separatedOutputFilePath = path.join(resolvedOutputDirectory, separatedInputFilePath);
-
-  //     logger.info(`[MAIN] Bundling separated module: ${separatedEntryFile}`);
-
-  //     // Recursively invoke main() to bundle this module in isolation
-  //     // Pass the current state so that baseDir and namespace remain consistent
-  //     await main({
-  //       host,
-  //       entryFile: separatedEntryFile,
-  //       outputFile: separatedOutputFilePath,
-  //       outputDirectory: resolvedOutputDirectory,
-  //       includeRuntime: false, // exclude runtime for submodules
-  //       parentState: state
-  //     });
-  //   });
-
-  //   // Step 12: Wait for all separated module bundles to complete before finishing
-  //   await Promise.all(subBundles);
-  //   logger.success("[MAIN] All separated modules processed successfully.");
+  //   // Step 10: Write the final bundled output to the specified output file
+  //   if (mod.entry) {
+  //     generateOutput(outputFilePath, result);
+  //   } else {
+  //     const _outputFilePath = ensureJsExtension(mapToDistPath(mod.path, outputDirectory)?.destination);
+  //     generateOutput(_outputFilePath, result);
+  //   }
   // }
 
   // // Final step: Log successful bundling completion

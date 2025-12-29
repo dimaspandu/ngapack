@@ -31,24 +31,24 @@ async function runAllTests() {
       namespace: "DynamicCSS"
     });
     runTest("Styles Module Dynamic CSS", styles.default, `
-        :root {
-          --accent: #2563eb;
-        }
+      :root {
+        --accent: #2563eb;
+      }
 
-        body {
-          font-family: sans-serif;
-          background: #f6f7fb;
-          padding: 20px;
-        }
+      body {
+        font-family: sans-serif;
+        background: #f6f7fb;
+        padding: 20px;
+      }
 
-        h1 {
-          color: var(--accent);
-        }
+      h1 {
+        color: var(--accent);
+      }
 
-        p.styled {
-          color: #10b981;
-          font-weight: bold;
-        }
+      p.styled {
+        color: #10b981;
+        font-weight: bold;
+      }
     `);
 
     // 5. 
