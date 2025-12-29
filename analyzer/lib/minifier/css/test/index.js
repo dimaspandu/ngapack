@@ -120,6 +120,35 @@ runTest(
 runTest(
   "Minify CSS - url function",
   minifyCSS(`background: url("img/bg.png");`),
-  "background:url(\"img/bg.png\");",
+  "background:url(\"img/bg.png\");"
+);
+
+/**
+ * COMPREHENSIVE
+ */
+
+runTest(
+  "Minify CSS - comprehensive styling",
+  minifyCSS(`
+    :root {
+      --accent: #2563eb;
+    }
+
+    body {
+      font-family: sans-serif;
+      background: #f6f7fb;
+      padding: 20px;
+    }
+
+    h1 {
+      color: var(--accent);
+    }
+
+    p.styled {
+      color: #10b981;
+      font-weight: bold;
+    }
+  `),
+  `:root{--accent:#2563eb;}body{font-family:sans-serif;background:#f6f7fb;padding:20px;}h1{color:var(--accent);}p.styled{color:#10b981;font-weight:bold;}`,
   true
 );

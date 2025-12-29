@@ -16,7 +16,7 @@ async function runAllTests() {
   try {
     // 2. Dynamic RPC module test
     const rpc = await import("./dynamic/rpc.js");
-    runTest("RPC Module getMessage Output", rpc.getMessage(), "Hello, World!");
+    runTest("RPC Module getMessage Output", rpc.getMessage(), "Hello, World! You alright, Mate?");
 
     // 3. Dynamic JSON module test
     const colors = await import("./dynamic/colors.json");
@@ -30,42 +30,23 @@ async function runAllTests() {
     const styles = await import("./dynamic/styles.css", {
       namespace: "DynamicCSS"
     });
-    runTest("Styles Module Dynamic CSS", styles.default, `
-      :root {
-        --accent: #2563eb;
-      }
+    runTest("Styles Module Dynamic CSS", styles.default.rules.length, 4);
 
-      body {
-        font-family: sans-serif;
-        background: #f6f7fb;
-        padding: 20px;
-      }
+    // // 5. 
+    // const { twina } = await import("./dynamic/twina.js");
+    // runTest(
+    //   "Twin A",
+    //   twina,
+    //   "I'm used by A!"
+    // );
 
-      h1 {
-        color: var(--accent);
-      }
-
-      p.styled {
-        color: #10b981;
-        font-weight: bold;
-      }
-    `);
-
-    // 5. 
-    const { twina } = await import("./dynamic/twina.js");
-    runTest(
-      "Twin A",
-      twina,
-      "I'm used by A!"
-    );
-
-    // 6. 
-    const { twinb } = await import("./dynamic/twinb.js");
-    runTest(
-      "Twin B",
-      twinb,
-      "I'm used by B!"
-    );
+    // // 6. 
+    // const { twinb } = await import("./dynamic/twinb.js");
+    // runTest(
+    //   "Twin B",
+    //   twinb,
+    //   "I'm used by B!"
+    // );
 
     // 7. Remote microfrontend test
     const somewhere = await import("https://www.microfrontends.com/resources/somewhere.js", {

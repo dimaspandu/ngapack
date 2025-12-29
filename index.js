@@ -95,7 +95,7 @@ function createNode(filename, separated = false) {
   if (extension === ".json") {
     productionCode = `exports.default=${originalCode};`;
   } else if (extension === ".css") {
-    productionCode = `var sheet=new CSSStyleSheet();sheet.replaceSync("${escapeForDoubleQuote(originalCode)}");exports.default=sheet;`;
+    productionCode = `var raw="${escapeForDoubleQuote(originalCode)}";if(typeof CSSStyleSheet==="undefined"){exports.default=raw;}else{var sheet=new CSSStyleSheet();sheet.replaceSync(raw);exports.default=sheet;}`;
   } else if (extension === ".svg" || extension === ".xml" || extension === ".html") {
     productionCode = `exports.default="${escapeForDoubleQuote(originalCode)}";`;
   }
@@ -140,10 +140,10 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
 
   const entryNode = createNode(entry);
   const queue = [entryNode];
+  const baseDir = path.dirname(path.resolve(entry)).replaceAll("\\", "/");
   const outputDir = normalizeId(path.dirname(outputFilePath));
 
-  const selfDir = path.dirname(entryNode.id);
-  entryNode.key = entryNode.id.replace(`${selfDir}/`, `${defaultNamespace}::`);
+  entryNode.key = entryNode.id.replace(`${baseDir}/`, `${defaultNamespace}::`);
 
   for (const node of queue) {
     node.mapping = {};
@@ -173,8 +173,7 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
           logger.info(`[GRAPH] Adding dependency module: ${absolutePath}`);
           const nextNode = createNode(absolutePath, dependency.type === "dynamic");
           nextNode.dependent = node.id;
-          const dependencyDir = path.dirname(absolutePath);
-          nextNode.key = absolutePath.replace(`${dependencyDir}/`, `${defaultNamespace}::`);
+          nextNode.key = absolutePath.replace(`${baseDir}/`, `${defaultNamespace}::`);
           queue.push(nextNode);
         } else {
           logger.info(`[GRAPH] Copying asset dependency: ${absolutePath}`);
@@ -184,8 +183,7 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
           processAndCopyFile(absolutePath, outPath).catch(logger.error);
         }
 
-        const dependencyDir = path.dirname(absolutePath);
-        node.mapping[relativePath] = absolutePath.replace(`${dependencyDir}/`, `${defaultNamespace}::`);
+        node.mapping[relativePath] = absolutePath.replace(`${baseDir}/`, `${defaultNamespace}::`);
       }
     }
   }
@@ -231,7 +229,6 @@ function createBundle(graph, host) {
 
   for (const id in bundleFiles) {
     const theBundle = bundleFiles[id];
-    // console.log("theBundle", theBundle);
 
     for (let i in theBundle.files) {
       const mod = theBundle.files[i];
@@ -299,41 +296,41 @@ function generateOutput(outputFilePath, bundleResult) {
  * where it will inherit the parent bundler state to ensure consistency.
  */
 export default async function main({
-  entryFile,
+  entry,
   host,
   namespace = "&",
-  outputDirectory,
-  outputFilename = "index.js"
+  outputDir,
+  outputFile = "index.js"
 }) {
   // Step 1: Log the start of the bundling process for the given entry file
-  logger.info(`[MAIN] Starting bundler for entry: ${entryFile}`);
+  logger.info(`[MAIN] Starting bundler for entry: ${entry}`);
 
   // Step 3: Determine the full path of the output file
   // If no specific output file is provided, default to 'index.js' inside the output directory
-  const outputFilePath = ensureJsExtension(path.join(outputDirectory, outputFilename));
+  const outputFilePath = ensureJsExtension(path.join(outputDir, outputFile));
 
   // Step 4: Build the dependency graph from the entry file
   // This includes analyzing modules, their dependencies, and preparing transformed code
-  const graph = createGraph(entryFile, outputFilePath, namespace);
+  const graph = createGraph(entry, outputFilePath, namespace);
 
-  // const bundle = createBundle(graph, host);
+  const bundle = createBundle(graph, host);
 
-  // for (const i in bundle) {
-  //   const mod = bundle[i];
-  //   const code = mod.codes;
+  for (const i in bundle) {
+    const mod = bundle[i];
+    const code = mod.codes;
 
-  //   logger.info("[MAIN] Minifying generated code...");
-  //   const result = true ? code : await uglifyJS(code);
+    logger.info("[MAIN] Minifying generated code...");
+    const result = true ? code : await uglifyJS(code);
 
-  //   // Step 10: Write the final bundled output to the specified output file
-  //   if (mod.entry) {
-  //     generateOutput(outputFilePath, result);
-  //   } else {
-  //     const _outputFilePath = ensureJsExtension(mapToDistPath(mod.path, outputDirectory)?.destination);
-  //     generateOutput(_outputFilePath, result);
-  //   }
-  // }
+    // Step 10: Write the final bundled output to the specified output file
+    if (mod.entry) {
+      generateOutput(outputFilePath, result);
+    } else {
+      const _outputFilePath = ensureJsExtension(mapToDistPath(mod.path, outputDir)?.destination);
+      generateOutput(_outputFilePath, result);
+    }
+  }
 
-  // // Final step: Log successful bundling completion
-  // logger.success("[MAIN] Bundling process completed successfully.");
+  // Final step: Log successful bundling completion
+  logger.success("[MAIN] Bundling process completed successfully.");
 }
