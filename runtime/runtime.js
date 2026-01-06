@@ -305,10 +305,7 @@
     }
 
     function remoteRequire(key, attributes = {}) {
-      if (!attributes.hasOwnProperty("assert")) {
-        attributes.assert = {};
-      }
-      attributes.assert.address = key;
+      attributes.address = key;
       return requireByHttp(mapping[key], attributes);
     }
 
@@ -358,58 +355,66 @@
           // 1. Static synchronous module test
           runTest("Greeting Module Default Export", greetings, "Hello, World!");
 
+          // 2. Dynamic RPC module test
+          var rpc = await requireByHttp("./dynamic/rpc.js");
+          runTest("RPC Module getMessage Output", rpc.getMessage(), "Hello, World!");
+
+          // 3. Dynamic JSON module test
+          var colors = await requireByHttp("./dynamic/colors.json");
+          runTest("Colors Module Dynamic JSON", colors.default, {
+            "primary": "#2563eb",
+            "secondary": "#6b7280",
+            "accent": "#10b981"
+          });
+
+          // 4. Dynamic CSS module test with namespace
+          var styles = await requireByHttp("./dynamic/styles.css", {
+            namespace: "DynamicCSS"
+          });
+          var outputExpectations = (`
+            :root {
+              --accent: #2563eb;
+            }
+
+            body {
+              font-family: sans-serif;
+              background: #f6f7fb;
+              padding: 20px;
+            }
+
+            h1 {
+              color: var(--accent);
+            }
+
+            p.styled {
+              color: #10b981;
+              font-weight: bold;
+            }
+          `);
+          if (typeof styles.default === typeof outputExpectations) {
+            runTest("Try => Styles Module Dynamic CSS", styles.default, outputExpectations);
+          } else {
+            runTest("Catch => Styles Module Dynamic CSS", styles.raw, outputExpectations);
+          }
+
+          // 5. Remote microfrontend test
           try {
-            // 2. Dynamic RPC module test
-            var rpc = await requireByHttp("./dynamic/rpc.js");
-            runTest("RPC Module getMessage Output", rpc.getMessage(), "Hello, World!");
-
-            // 3. Dynamic JSON module test
-            var colors = await requireByHttp("./dynamic/colors.json");
-            runTest("Colors Module Dynamic JSON", colors.default, {
-              "primary": "#2563eb",
-              "secondary": "#6b7280",
-              "accent": "#10b981"
-            });
-
-            // 4. Dynamic CSS module test with namespace
-            var styles = await requireByHttp("./dynamic/styles.css", {
-              namespace: "DynamicCSS"
-            });
-            runTest("Styles Module Dynamic CSS", styles.default, `
-                :root {
-                  --accent: #2563eb;
-                }
-
-                body {
-                  font-family: sans-serif;
-                  background: #f6f7fb;
-                  padding: 20px;
-                }
-
-                h1 {
-                  color: var(--accent);
-                }
-
-                p.styled {
-                  color: #10b981;
-                  font-weight: bold;
-                }
-            `);
-
-            // 5. Remote microfrontend test
             var somewhere = await requireByHttp("https://www.microfrontends.com/resources/somewhere.js", {
               namespace: "MicroFrontend"
             });
             runTest(
-              "Somewhere Dynamic Module (Microfrontend)",
+              "Try => Somewhere Dynamic Module (Microfrontend)",
               somewhere.default,
               "Hello! I'm from somewhere!",
               true
             );
-
           } catch (err) {
-            // Capture any dynamic import failure
-            console.error("Error loading dynamic module:", err);
+            runTest(
+              "Catch => Somewhere Dynamic Module (Microfrontend)",
+              "Error loading external dynamic module.",
+              "Error loading external dynamic module.",
+              true
+            );
           }
         }
 

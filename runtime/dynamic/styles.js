@@ -30,6 +30,8 @@
             font-weight: bold;
           }
         `);
+        
+        exports.raw = raw;
 
         if (typeof CSSStyleSheet === "undefined") {
           exports.default = raw;

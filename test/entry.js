@@ -32,24 +32,24 @@ async function runAllTests() {
     });
     runTest("Styles Module Dynamic CSS", styles.default.rules.length, 4);
 
-    // // 5. 
-    // const { twina } = await import("./dynamic/twina.js");
-    // runTest(
-    //   "Twin A",
-    //   twina,
-    //   "I'm used by A!"
-    // );
+    // 5. 
+    const { twina } = await import("./dynamic/twina.js");
+    runTest(
+      "Twin A",
+      twina(),
+      "I'm used by A(1)!"
+    );
 
-    // // 6. 
-    // const { twinb } = await import("./dynamic/twinb.js");
-    // runTest(
-    //   "Twin B",
-    //   twinb,
-    //   "I'm used by B!"
-    // );
+    // 6. 
+    const { twinb } = await import("./dynamic/twinb.js");
+    runTest(
+      "Twin B",
+      twinb(),
+      "I'm used by B(2)!"
+    );
 
     // 7. Remote microfrontend test
-    const somewhere = await import("https://www.microfrontends.com/resources/somewhere.js", {
+    const somewhere = await import("https://djsmicrofrontends.netlify.app/resources/somewhere.js", {
       namespace: "MicroFrontend"
     });
     runTest(

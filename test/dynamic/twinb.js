@@ -1,5 +1,6 @@
-import twins from "./twins.js";
+import twins, { SOURCE_OF_TRUTH } from "./twins.js";
 
 export function twinb() {
-  return twins('B');
+  SOURCE_OF_TRUTH.phase++;
+  return twins(`B(${SOURCE_OF_TRUTH.phase})`);
 }
