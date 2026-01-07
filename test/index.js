@@ -27,10 +27,10 @@ await bundler({
   outputDir: path.join(__dirname, "dist")
 });
 
-// // Dynamically import a mock environment configuration script after bundling
-// // This script (`env.mock.js`) likely sets up environment variables or stubs for testing
-// await import("./env.mock.js");
+// Dynamically import a mock environment configuration script after bundling
+// This script (`env.mock.js`) likely sets up environment variables or stubs for testing
+await import("./env.mock.js");
 
-// // Dynamically import the freshly generated bundle to execute it within the same runtime
-// // This validates that the bundler output is functional and ready to run
-// await import("./dist/bundle.js");
+// Dynamically import the freshly generated bundle to execute it within the same runtime
+// This validates that the bundler output is functional and ready to run
+await import("./dist/bundle.js");
