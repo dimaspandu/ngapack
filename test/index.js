@@ -24,13 +24,7 @@ const __dirname = dirname(__filename);
 // - `outputDir`: The final bundled file to be generated in the "dist" directory
 await bundler({
   entry: path.join(__dirname, "entry.js"),
-  outputDir: path.join(__dirname, "dist")
+  outputDir: path.join(__dirname, "public")
 });
 
-// Dynamically import a mock environment configuration script after bundling
-// This script (`env.mock.js`) likely sets up environment variables or stubs for testing
-await import("./env.mock.js");
-
-// Dynamically import the freshly generated bundle to execute it within the same runtime
-// This validates that the bundler output is functional and ready to run
-await import("./dist/bundle.js");
+await import("./serve.js");
