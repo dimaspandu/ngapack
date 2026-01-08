@@ -1,7 +1,8 @@
 import "./assets/favicon.ico"; // copy favicon to public
 import "./index.html"; // copy index to public
-import Unnecessary from "./internal/unnecessary.js";
+import runTest from "./tester.js";
 import greetings from "./greetings.js";
+import Unnecessary from "./internal/unnecessary.js";
 
 /**
  * Canonical property order.

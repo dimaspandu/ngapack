@@ -1,4 +1,5 @@
 import fs from "fs";
+import fsp from "fs/promises";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -86,7 +87,7 @@ function createNode(filename, separated = false) {
       return minifyCSS(rawCode);
     }
 
-    if (ext === ".svg" || ext === ".xml" || ext === ".html") {
+    if (ext === ".svg" || ext === ".xml") {
       return minifyHTML(rawCode);
     }
 
@@ -109,7 +110,7 @@ function createNode(filename, separated = false) {
       `exports.raw=raw;` +
       `if(typeof CSSStyleSheet==="undefined"){exports.default=raw;}` +
       `else{var sheet=new CSSStyleSheet();sheet.replaceSync(raw);exports.default=sheet;}`;
-  } else if (ext === ".svg" || ext === ".xml" || ext === ".html") {
+  } else if (ext === ".svg" || ext === ".xml") {
     productionCode = `exports.default="${escapeForDoubleQuote(transformedCode)}";`;
   }
 
@@ -197,7 +198,7 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
       const ext = path.extname(absolutePath);
 
       if (
-        [".js", ".mjs", ".json", ".css", ".svg", ".xml", ".html"].includes(ext)
+        [".js", ".mjs", ".json", ".css", ".svg", ".xml"].includes(ext)
       ) {
         logger.info(`[GRAPH] Adding dependency module: ${absolutePath}`);
 
@@ -228,13 +229,31 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
           path.join(outputDir, relativeToEntry)
         );
 
-        processAndCopyFile(absolutePath, outPath).catch(logger.error);
+        (async function() {
+          /**
+           * HTML assets are minified before writing to disk.
+           */
+          if (ext === ".html") {
+            const raw = await fsp.readFile(absolutePath, "utf8");
+            const minified = minifyHTML(raw);
+
+            await fsp.writeFile(outPath, minified, "utf8");
+
+            logger.success(`[COPY] Minified HTML written to ${outPath}`);
+          } else {
+            processAndCopyFile(absolutePath, outPath).catch(logger.error);
+          }
+        })();
       }
 
-      node.mapping[relativePath] = absolutePath.replace(
-        `${baseDir}/`,
-        `${defaultNamespace}::`
-      );
+      if (
+        [".js", ".mjs", ".json", ".css", ".svg", ".xml"].includes(ext)
+      ) {
+        node.mapping[relativePath] = absolutePath.replace(
+          `${baseDir}/`,
+          `${defaultNamespace}::`
+        );
+      }
     }
   }
 
@@ -243,16 +262,16 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
 }
 
 /**
- * Bundle container indexed by entry module ID.
- */
-const bundleFiles = {};
-
-/**
  * createBundle(graph, host)
  * --------------------------
  * Groups graph nodes into bundles (entry bundle + dynamic bundles).
  */
 function createBundle(graph, host) {
+  /**
+   * Bundle container indexed by entry module ID.
+   */
+  const bundleFiles = {};
+
   /**
    * Step 1: Initialize entry bundle.
    */
