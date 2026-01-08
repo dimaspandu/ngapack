@@ -21,7 +21,7 @@ import {
 
 /**
  * Resolve __filename and __dirname in ESM environment.
- * Node.js ESM does not provide them by default.
+ * Node.js does not expose these globals in ESM mode.
  */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -29,8 +29,8 @@ const __dirname = dirname(__filename);
 /**
  * RUNTIME_CODE(host, modules, entry)
  * ----------------------------------
- * Generates the runtime bootstrap code as a string.
- * This code will be injected into the main (entry) bundle only.
+ * Generates runtime bootstrap code as a string.
+ * This runtime is injected only into the entry bundle.
  */
 const RUNTIME_CODE = (host, modules, entry) => {
   const runtimeTemplatePath = path.join(__dirname, "runtime/template.js");
@@ -39,14 +39,18 @@ const RUNTIME_CODE = (host, modules, entry) => {
 
   let template = fs.readFileSync(runtimeTemplatePath, "utf-8");
 
-  // Determine runtime host resolution strategy
-  // If host is undefined, fallback to runtime URL detection
+  /**
+   * Decide how the runtime resolves the host.
+   * If host is not provided, runtime will infer it from the current URL.
+   */
   const injectedHost =
     host !== undefined
       ? JSON.stringify(host)
       : "getHostFromCurrentUrl()";
 
-  // Inject runtime placeholders
+  /**
+   * Replace runtime placeholders with actual values.
+   */
   template = template
     .replace(/__INJECT_MODULES__/g, modules)
     .replace(/__INJECT_ENTRY__/g, entry)
@@ -58,8 +62,8 @@ const RUNTIME_CODE = (host, modules, entry) => {
 /**
  * normalizeId(p)
  * ----------------
- * Normalizes file paths into absolute, forward-slash-based identifiers.
- * This ensures consistent module IDs across platforms.
+ * Normalize file paths into absolute, forward-slash-based identifiers.
+ * This guarantees stable module IDs across operating systems.
  */
 function normalizeId(p) {
   return path.resolve(p).replace(/\\/g, "/");
@@ -80,7 +84,7 @@ function createNode(filename, separated = false) {
   let extraction;
 
   /**
-   * Step 1: Transform source code depending on file type.
+   * Step 1: Transform the source code based on file type.
    */
   const transformedCode = (() => {
     if (ext === ".css") {
@@ -91,14 +95,16 @@ function createNode(filename, separated = false) {
       return minifyHTML(rawCode);
     }
 
-    // JavaScript files:
-    // Convert ESM to CJS and extract dependency metadata
+    /**
+     * JavaScript files:
+     * Convert ESM to CommonJS and extract dependency metadata.
+     */
     extraction = convertESMToCJSWithMeta(rawCode);
     return extraction.code;
   })();
 
   /**
-   * Step 2: Wrap transformed code into CommonJS-compatible output.
+   * Step 2: Wrap transformed output into CommonJS-compatible exports.
    */
   let productionCode = transformedCode;
 
@@ -149,7 +155,7 @@ function createNode(filename, separated = false) {
 /**
  * createGraph(entry, outputFilePath, defaultNamespace)
  * ----------------------------------------------------
- * Builds the full dependency graph starting from the entry file.
+ * Builds a dependency graph starting from the entry file.
  */
 function createGraph(entry, outputFilePath, defaultNamespace) {
   logger.info("[GRAPH] Creating dependency graph from entry:", entry);
@@ -160,7 +166,9 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
   const baseDir = path.dirname(path.resolve(entry)).replaceAll("\\", "/");
   const outputDir = normalizeId(path.dirname(outputFilePath));
 
-  // Assign entry module key
+  /**
+   * Assign a namespaced key to the entry module.
+   */
   entryNode.key = entryNode.id.replace(
     `${baseDir}/`,
     `${defaultNamespace}::`
@@ -174,7 +182,8 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
       const relativePath = dependency.module;
 
       /**
-       * Case 1: HTTP / HTTPS imports
+       * Case 1: HTTP / HTTPS imports.
+       * These modules are not bundled and are resolved at runtime.
        */
       if (/^https?:\/\//.test(relativePath)) {
         const url = new URL(relativePath);
@@ -189,7 +198,7 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
       }
 
       /**
-       * Case 2: Local file imports
+       * Case 2: Local file imports.
        */
       const absolutePath = normalizeId(
         path.join(currentDir, relativePath)
@@ -216,7 +225,7 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
         queue.push(childNode);
       } else {
         /**
-         * Non-JS assets are copied directly to output directory.
+         * Non-JS assets are copied directly to the output directory.
          */
         logger.info(`[GRAPH] Copying asset dependency: ${absolutePath}`);
 
@@ -229,9 +238,9 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
           path.join(outputDir, relativeToEntry)
         );
 
-        (async function() {
+        (async function () {
           /**
-           * HTML assets are minified before writing to disk.
+           * HTML assets are minified before being written to disk.
            */
           if (ext === ".html") {
             const raw = await fsp.readFile(absolutePath, "utf8");
@@ -246,6 +255,9 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
         })();
       }
 
+      /**
+       * Register module mapping for resolvable extensions only.
+       */
       if (
         [".js", ".mjs", ".json", ".css", ".svg", ".xml"].includes(ext)
       ) {
@@ -264,11 +276,12 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
 /**
  * createBundle(graph, host)
  * --------------------------
- * Groups graph nodes into bundles (entry bundle + dynamic bundles).
+ * Groups graph nodes into output bundles.
+ * Produces one entry bundle and multiple dynamic bundles if needed.
  */
 function createBundle(graph, host) {
   /**
-   * Bundle container indexed by entry module ID.
+   * Bundle container indexed by module ID.
    */
   const bundleFiles = {};
 
@@ -289,7 +302,7 @@ function createBundle(graph, host) {
   for (let i = 1; i < graph.length; i++) {
     const node = graph[i];
 
-    if (!bundleFiles[node.id] && node.separated) {
+    if (node.separated && !bundleFiles[node.id]) {
       bundleFiles[node.id] = {
         entry: false,
         path: node.id,
@@ -312,7 +325,7 @@ function createBundle(graph, host) {
   }
 
   /**
-   * Step 4: Generate bundle code.
+   * Step 4: Generate final bundle code.
    */
   for (const id in bundleFiles) {
     const bundle = bundleFiles[id];
@@ -381,7 +394,7 @@ function generateOutput(outputFilePath, code) {
  * main(options)
  * ---------------
  * Bundler entry point.
- * Orchestrates dependency analysis, bundling, minification, and output.
+ * Orchestrates graph creation, bundling, minification, and output.
  */
 export default async function main({
   entry,

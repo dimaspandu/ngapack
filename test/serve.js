@@ -1,18 +1,37 @@
+/**
+ * Simple static file server for local testing.
+ *
+ * This server exists only for development and manual verification.
+ * It is intentionally decoupled from the bundler implementation.
+ */
+
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+/**
+ * Resolve __filename and __dirname in ESM context.
+ */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 /**
- * Basic static file server
+ * Create a basic static HTTP server.
+ *
+ * rootDir:
+ *   Directory to be served as the web root.
+ *
+ * port:
+ *   Local port to listen on.
  */
 function createStaticServer(rootDir, port) {
   const server = http.createServer((req, res) => {
     const urlPath = decodeURIComponent(req.url.split("?")[0]);
-    const filePath = path.join(rootDir, urlPath === "/" ? "/index.html" : urlPath);
+    const filePath = path.join(
+      rootDir,
+      urlPath === "/" ? "/index.html" : urlPath
+    );
 
     fs.readFile(filePath, (err, data) => {
       if (err) {
@@ -33,6 +52,7 @@ function createStaticServer(rootDir, port) {
         "Content-Type": typeMap[ext] || "text/plain",
         "Access-Control-Allow-Origin": "*"
       });
+
       res.end(data);
     });
   });
@@ -44,6 +64,6 @@ function createStaticServer(rootDir, port) {
 }
 
 /**
- * Start concurrent servers
+ * Start the development server for bundled output.
  */
 createStaticServer(path.join(__dirname, "public"), 2121);

@@ -1,32 +1,49 @@
-// Import core Node.js modules
-// `path` is used for manipulating filesystem paths
-// `dirname` is used to extract the directory name of a file path
-import path, { dirname } from "path";
+/**
+ * Test entry for ngapack
+ *
+ * This file acts as a minimal integration test:
+ * - Runs the bundler with a concrete entry file
+ * - Emits output into the public directory
+ * - Optionally starts a static server for manual inspection
+ */
 
-// Import `fileURLToPath` to convert an ES module `import.meta.url` into a regular file path
-// This is necessary because in ESM, `__filename` and `__dirname` are not available by default
+import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 
-// Import the main bundler function from the root index.js file
-// The bundler is expected to take configuration options and produce a bundle output
+// Import the bundler entry point
 import bundler from "../bundler/index.js";
 
-// Derive the absolute path of the current file using the ES module pattern
-// `fileURLToPath(import.meta.url)` converts the module's URL into a file system path string
+/**
+ * Resolve __filename and __dirname for ESM.
+ * Node.js does not provide these globals in ES modules.
+ */
 const __filename = fileURLToPath(import.meta.url);
-
-// Extract the directory name from the current file path
-// This replicates the CommonJS `__dirname` behavior
 const __dirname = dirname(__filename);
 
-// Execute the bundler asynchronously with explicit input and output paths
-// - `entry`: The entry point for the bundler (source file to start dependency resolution)
-// - `outputDir`: The final bundled file to be generated in the "dist" directory
+/**
+ * Execute bundler with explicit test configuration.
+ *
+ * entry:
+ *   Source entry file used to build the dependency graph.
+ *
+ * outputDir:
+ *   Destination directory for all emitted bundles and assets.
+ *
+ * outputFilename:
+ *   Explicit output name to avoid relying on the default.
+ *
+ * uglified:
+ *   Enables minification to simulate production output.
+ */
 await bundler({
   entry: path.join(__dirname, "src", "entry.js"),
   outputDir: path.join(__dirname, "public"),
-  outputFilename: "entry.js", // use the same file because default is index.js
-  uglified: false // using the terser
+  outputFilename: "entry.js",
+  uglified: true
 });
 
+/**
+ * Start a local static server after bundling completes.
+ * This is intentionally kept separate from the bundler itself.
+ */
 await import("./serve.js");

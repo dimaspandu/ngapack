@@ -1,165 +1,118 @@
+/**
+ * ngapack test entry
+ *
+ * This file serves as an integration and specification test for ngapack.
+ * It exercises multiple module types and loading strategies to ensure:
+ * - Static imports work correctly
+ * - Dynamic imports are bundled and resolved properly
+ * - Non-JS assets are emitted to the output directory
+ * - Runtime behavior matches browser expectations
+ */
+
+/**
+ * Asset-only imports.
+ *
+ * These imports exist solely to verify that non-JS assets
+ * are copied (or processed) into the output directory.
+ * They are not consumed by JavaScript at runtime.
+ */
 import "./assets/favicon.ico"; // copy favicon to public
-import "./index.html"; // copy index to public
+import "./index.html";         // copy index.html to public
+
+/**
+ * Test utilities and core modules.
+ */
 import runTest from "./tester.js";
 import greetings from "./greetings.js";
+import sheetToCanonicalObject from "./sheetToCanonicalObject.js";
 import Unnecessary from "./internal/unnecessary.js";
 
 /**
- * Canonical property order.
+ * Execute all integration tests.
  *
- * This order defines the semantic contract used by tests.
- * All CSS extracted from CSSStyleSheet must be emitted
- * following this order to ensure deterministic comparison.
- */
-const CANONICAL_PROPERTY_ORDER = [
-  "--accent",
-  "font-family",
-  "color",
-  "font-weight",
-  "background",
-  "padding"
-];
-
-/**
- * Convert a CSSStyleSheet into a canonical semantic object.
- *
- * Purpose:
- * - Remove CSSOM-expanded noise (background-*, padding-*)
- * - Normalize shorthand properties
- * - Emit properties in a stable, predefined order
- *
- * @param {CSSStyleSheet} sheet
- * @returns {Record<string, Record<string, string>>}
- */
-function sheetToCanonicalObject(sheet) {
-  const result = {};
-
-  for (const rule of sheet.cssRules) {
-    if (!rule.selectorText) continue;
-
-    const style = rule.style;
-    const collected = {};
-
-    /**
-     * Collect custom properties.
-     */
-    for (const prop of style) {
-      if (prop.startsWith("--")) {
-        collected[prop] = style.getPropertyValue(prop).trim();
-      }
-    }
-
-    /**
-     * Collect semantic typography and color properties.
-     */
-    if (style.fontFamily) {
-      collected["font-family"] = style.fontFamily;
-    }
-
-    if (style.color) {
-      collected["color"] = style.color;
-    }
-
-    if (style.fontWeight) {
-      collected["font-weight"] = style.fontWeight;
-    }
-
-    /**
-     * Canonical background shorthand.
-     * CSSOM expands background into multiple longhands,
-     * but semantically we only care about background color.
-     */
-    if (style.backgroundColor) {
-      collected["background"] = style.backgroundColor;
-    }
-
-    /**
-     * Canonical padding shorthand.
-     * Only emit shorthand if all sides are equal.
-     */
-    if (
-      style.paddingTop &&
-      style.paddingTop === style.paddingRight &&
-      style.paddingTop === style.paddingBottom &&
-      style.paddingTop === style.paddingLeft
-    ) {
-      collected["padding"] = style.paddingTop;
-    }
-
-    /**
-     * Emit properties in canonical order.
-     */
-    const out = {};
-    for (const key of CANONICAL_PROPERTY_ORDER) {
-      if (key in collected) {
-        out[key] = collected[key];
-      }
-    }
-
-    if (Object.keys(out).length > 0) {
-      result[rule.selectorText] = out;
-    }
-  }
-
-  return result;
-}
-
-/**
- * Test runner covering:
- * 1. Static ES module
- * 2. Dynamic ES module
+ * Covered scenarios:
+ * 1. Static ES module import
+ * 2. Dynamic JavaScript module
  * 3. Dynamic JSON module
- * 4. Dynamic CSS module
- * 5. Remote microfrontend module
+ * 4. Dynamic CSS module (with namespace)
+ * 5. Multiple dynamic bundles sharing internal dependencies
+ * 6. Remote microfrontend module over HTTP
  */
 async function runAllTests() {
-  // 1. Static synchronous module test
-  runTest("Greeting Module Default Export", greetings, "Hello, World!");
+  /**
+   * 1. Static synchronous module test.
+   */
+  runTest(
+    "Greeting Module Default Export",
+    greetings,
+    "Hello, World!"
+  );
 
-  // 2. Dynamic RPC module test
+  /**
+   * 2. Dynamic JavaScript module test.
+   */
   const rpc = await import("./dynamic/rpc.js");
-  runTest("RPC Module getMessage Output", rpc.getMessage(), "Hello, World! You alright, Mate?");
+  runTest(
+    "RPC Module getMessage Output",
+    rpc.getMessage(),
+    "Hello, World! You alright, Mate?"
+  );
 
-  // 3. Dynamic JSON module test
+  /**
+   * 3. Dynamic JSON module test.
+   */
   const colors = await import("./dynamic/colors.json", {
     with: { type: "json" }
   });
-  runTest("Colors Module Dynamic JSON", colors.default, {
-    "primary": "#2563eb",
-    "secondary": "#6b7280",
-    "accent": "#10b981"
-  });
+  runTest(
+    "Colors Module Dynamic JSON",
+    colors.default,
+    {
+      primary: "#2563eb",
+      secondary: "#6b7280",
+      accent: "#10b981"
+    }
+  );
 
-  // 4. Dynamic CSS module test with namespace
+  /**
+   * 4. Dynamic CSS module test with explicit namespace.
+   */
   const styles = await import("./dynamic/styles.css", {
     namespace: "DynamicCSS",
     with: { type: "css" }
   });
+
   const expectedCSSObject = {
     ":root": {
       "--accent": "#2563eb"
     },
-    "body": {
+    body: {
       "font-family": "sans-serif",
-      "background": "rgb(246, 247, 251)",
-      "padding": "20px"
+      background: "rgb(246, 247, 251)",
+      padding: "20px"
     },
-    "h1": {
-      "color": "var(--accent)"
+    h1: {
+      color: "var(--accent)"
     },
     "p.styled": {
-      "color": "rgb(16, 185, 129)",
+      color: "rgb(16, 185, 129)",
       "font-weight": "bold"
     }
   };
+
+  /**
+   * Prefer native CSSStyleSheet when supported.
+   * Fallback to raw CSS string otherwise.
+   */
   try {
     styles.default instanceof CSSStyleSheet;
+
     runTest(
       "Styles Module Dynamic CSS (native CSSStyleSheet)",
       sheetToCanonicalObject(styles.default),
       expectedCSSObject
     );
-  } catch (err) {
+  } catch {
     runTest(
       "Styles Module Dynamic CSS (unsupported runtime)",
       styles.default,
@@ -186,7 +139,9 @@ async function runAllTests() {
     );
   }
 
-  // 5. 
+  /**
+   * 5. Dynamic bundle A.
+   */
   const { twina } = await import("./dynamic/twina.js");
   runTest(
     "Twin A",
@@ -194,7 +149,9 @@ async function runAllTests() {
     "I'm used by A(1)!"
   );
 
-  // 6. 
+  /**
+   * 6. Dynamic bundle B.
+   */
   const { twinb } = await import("./dynamic/twinb.js");
   runTest(
     "Twin B",
@@ -202,18 +159,22 @@ async function runAllTests() {
     "I'm used by B(2)!"
   );
 
-  // 7. Remote microfrontend test
+  /**
+   * 7. Remote microfrontend module test.
+   */
   try {
-    const somewhere = await import("https://djsmicrofrontends.netlify.app/resources/somewhere.js", {
-      namespace: "MicroFrontend"
-    });
+    const somewhere = await import(
+      "https://djsmicrofrontends.netlify.app/resources/somewhere.js",
+      { namespace: "MicroFrontend" }
+    );
+
     runTest(
       "Try => Somewhere Dynamic Module (Microfrontend)",
       somewhere.default,
       "Hello! I'm from somewhere!",
       true
     );
-  } catch (err) {
+  } catch {
     runTest(
       "Catch => Somewhere Dynamic Module (Microfrontend)",
       "Error loading external dynamic module.",
@@ -223,4 +184,7 @@ async function runAllTests() {
   }
 }
 
+/**
+ * Start integration test execution.
+ */
 runAllTests();
