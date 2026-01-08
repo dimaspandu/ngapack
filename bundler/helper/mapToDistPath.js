@@ -1,32 +1,21 @@
 import path from "path";
 
 /**
- * Build destination path string while preserving relative structure.
- *
- * @param {string} sourcePath - Absolute source file path
- * @param {string} distPath - Absolute dist folder path
- * @returns {{
- *   success: boolean,
- *   source: string,
- *   destination?: string,
- *   error?: string
- * }}
+ * Map source file into dist folder
+ * relative to the entry directory, not project root.
  */
-export default function mapToDistPath(sourcePath, distPath) {
+export default function mapToDistPath(sourcePath, distPath, entryPath) {
   try {
     const sourceAbs = path.resolve(sourcePath);
     const distAbs = path.resolve(distPath);
 
-    // project root = parent folder of dist
-    const projectRoot = path.dirname(distAbs);
+    // Entry directory becomes the logical root
+    const entryDir = path.dirname(path.resolve(entryPath));
 
-    // relative path from project root
-    const relative = path.relative(projectRoot, sourceAbs);
+    // Path relative to entry directory
+    const relative = path.relative(entryDir, sourceAbs);
 
-    // remove leading "dist/" if exists
-    const cleanRelative = relative.replace(/^dist[\\/]/, "");
-
-    const destination = path.join(distAbs, cleanRelative);
+    const destination = path.join(distAbs, relative);
 
     return {
       success: true,
@@ -41,3 +30,4 @@ export default function mapToDistPath(sourcePath, distPath) {
     };
   }
 }
+

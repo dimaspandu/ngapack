@@ -23,10 +23,10 @@ const __dirname = dirname(__filename);
 // - `entry`: The entry point for the bundler (source file to start dependency resolution)
 // - `outputDir`: The final bundled file to be generated in the "dist" directory
 await bundler({
-  entry: path.join(__dirname, "entry.js"),
+  entry: path.join(__dirname, "src", "entry.js"),
   outputDir: path.join(__dirname, "public"),
-  outputFilename: "bundle.js",
-  uglified: true
+  outputFilename: "entry.js", // use the same file because default is index.js
+  uglified: false // using the terser
 });
 
 await import("./serve.js");

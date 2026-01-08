@@ -12,7 +12,7 @@ const __dirname = path.dirname(__filename);
 function createStaticServer(rootDir, port) {
   const server = http.createServer((req, res) => {
     const urlPath = decodeURIComponent(req.url.split("?")[0]);
-    const filePath = path.join(rootDir, urlPath === "/" ? "/test.html" : urlPath);
+    const filePath = path.join(rootDir, urlPath === "/" ? "/index.html" : urlPath);
 
     fs.readFile(filePath, (err, data) => {
       if (err) {

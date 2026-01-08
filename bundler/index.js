@@ -1,5 +1,4 @@
 import fs from "fs";
-import fsp from "fs/promises";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -15,6 +14,7 @@ import {
   escapeForDoubleQuote,
   logger,
   mapToDistPath,
+  processAndCopyFile,
   uglifyJS
 } from "./helper.js";
 
@@ -62,20 +62,6 @@ const RUNTIME_CODE = (host, modules, entry) => {
  */
 function normalizeId(p) {
   return path.resolve(p).replace(/\\/g, "/");
-}
-
-/**
- * processAndCopyFile(src, dest)
- * ------------------------------
- * Copies non-JS assets (images, fonts, etc.) into the output directory.
- */
-async function processAndCopyFile(src, dest) {
-  logger.info(`[COPY] Copying asset from ${src} to ${dest}`);
-
-  await fsp.mkdir(path.dirname(dest), { recursive: true });
-  await fsp.copyFile(src, dest);
-
-  logger.success(`[COPY] Asset successfully copied to ${dest}`);
 }
 
 /**
@@ -405,7 +391,7 @@ export default async function main({
     if (bundle.entry) {
       generateOutput(outputFilePath, result);
     } else {
-      const mapped = mapToDistPath(bundle.path, outputDir)?.destination;
+      const mapped = mapToDistPath(bundle.path, outputDir, entry)?.destination;
       generateOutput(ensureJsExtension(mapped), result);
     }
   }
