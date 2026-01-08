@@ -9,7 +9,7 @@ import { fileURLToPath } from "url";
 
 // Import the main bundler function from the root index.js file
 // The bundler is expected to take configuration options and produce a bundle output
-import bundler from "../index.js";
+import bundler from "../bundler/index.js";
 
 // Derive the absolute path of the current file using the ES module pattern
 // `fileURLToPath(import.meta.url)` converts the module's URL into a file system path string
@@ -24,7 +24,9 @@ const __dirname = dirname(__filename);
 // - `outputDir`: The final bundled file to be generated in the "dist" directory
 await bundler({
   entry: path.join(__dirname, "entry.js"),
-  outputDir: path.join(__dirname, "public")
+  outputDir: path.join(__dirname, "public"),
+  outputFilename: "bundle.js",
+  uglified: true
 });
 
 await import("./serve.js");

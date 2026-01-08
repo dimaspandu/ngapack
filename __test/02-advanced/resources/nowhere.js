@@ -1,1 +1,0 @@
-export const message = "Nothing's here!";
