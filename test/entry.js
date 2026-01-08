@@ -1,6 +1,7 @@
 // import runTest from "./tester.js";
 import Unnecessary from "./internal/unnecessary.js";
 import greetings from "./greetings.js";
+import "./sample-image.png";
 
 /**
  * Canonical property order.

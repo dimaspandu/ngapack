@@ -2,12 +2,14 @@ import fs from "fs";
 import fsp from "fs/promises";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
+
 import {
   convertESMToCJSWithMeta,
   minifyCSS,
   minifyHTML,
   minifyJS
 } from "./analyzer.js";
+
 import {
   ensureJsExtension,
   escapeForDoubleQuote,
@@ -16,14 +18,18 @@ import {
   uglifyJS
 } from "./helper.js";
 
-// Resolve __filename and __dirname in ESM scope
+/**
+ * Resolve __filename and __dirname in ESM environment.
+ * Node.js ESM does not provide them by default.
+ */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /**
- * RUNTIME_CODE(host)
- * -------------------
- * Returns the runtime code as a string literal.
+ * RUNTIME_CODE(host, modules, entry)
+ * ----------------------------------
+ * Generates the runtime bootstrap code as a string.
+ * This code will be injected into the main (entry) bundle only.
  */
 const RUNTIME_CODE = (host, modules, entry) => {
   const runtimeTemplatePath = path.join(__dirname, "runtime/template.js");
@@ -32,12 +38,14 @@ const RUNTIME_CODE = (host, modules, entry) => {
 
   let template = fs.readFileSync(runtimeTemplatePath, "utf-8");
 
-  // Determine host string
-  const injectedHost = host !== undefined
-    ? JSON.stringify(host)
-    : "getHostFromCurrentUrl()"; // use runtime function fallback
+  // Determine runtime host resolution strategy
+  // If host is undefined, fallback to runtime URL detection
+  const injectedHost =
+    host !== undefined
+      ? JSON.stringify(host)
+      : "getHostFromCurrentUrl()";
 
-  // Inject values into template
+  // Inject runtime placeholders
   template = template
     .replace(/__INJECT_MODULES__/g, modules)
     .replace(/__INJECT_ENTRY__/g, entry)
@@ -49,7 +57,8 @@ const RUNTIME_CODE = (host, modules, entry) => {
 /**
  * normalizeId(p)
  * ----------------
- * Converts a file path into an absolute normalized path using forward slashes.
+ * Normalizes file paths into absolute, forward-slash-based identifiers.
+ * This ensures consistent module IDs across platforms.
  */
 function normalizeId(p) {
   return path.resolve(p).replace(/\\/g, "/");
@@ -58,63 +67,79 @@ function normalizeId(p) {
 /**
  * processAndCopyFile(src, dest)
  * ------------------------------
- * Copies non-JS files (images, fonts, etc.) to destination.
+ * Copies non-JS assets (images, fonts, etc.) into the output directory.
  */
 async function processAndCopyFile(src, dest) {
   logger.info(`[COPY] Copying asset from ${src} to ${dest}`);
+
   await fsp.mkdir(path.dirname(dest), { recursive: true });
   await fsp.copyFile(src, dest);
+
   logger.success(`[COPY] Asset successfully copied to ${dest}`);
 }
 
 /**
- * createNode(filename)
- * ---------------------
- * Reads a file and transforms it into a node object for the dependency graph.
+ * createNode(filename, separated)
+ * --------------------------------
+ * Reads and transforms a source file into a dependency graph node.
+ * Each node represents a single module.
  */
 function createNode(filename, separated = false) {
   logger.info(`[NODE] Processing file: ${filename}`);
 
   const rawCode = fs.readFileSync(filename, "utf-8");
-  const parts = filename.split(".");
-  const extension = parts.length > 1 ? "." + parts.pop() : "";
+  const ext = path.extname(filename);
 
   let extraction;
 
-  // Prepare transformed code depending on file type
-  const originalCode = (function() {
-    if (extension === ".css") {
+  /**
+   * Step 1: Transform source code depending on file type.
+   */
+  const transformedCode = (() => {
+    if (ext === ".css") {
       return minifyCSS(rawCode);
     }
-    if (extension === ".svg" || extension === ".xml" || extension === ".html") {
+
+    if (ext === ".svg" || ext === ".xml" || ext === ".html") {
       return minifyHTML(rawCode);
     }
-    // For JS: transpile ESM -> CJS, strip comments, inline into single line
+
+    // JavaScript files:
+    // Convert ESM to CJS and extract dependency metadata
     extraction = convertESMToCJSWithMeta(rawCode);
     return extraction.code;
-  }());
+  })();
 
-  // Convert to production-ready code
-  let productionCode = originalCode;
-  if (extension === ".json") {
-    productionCode = `exports.default=${originalCode};`;
-  } else if (extension === ".css") {
-    productionCode = `var raw="${escapeForDoubleQuote(originalCode)}";if(typeof CSSStyleSheet==="undefined"){exports.default=raw;}else{var sheet=new CSSStyleSheet();sheet.replaceSync(raw);exports.default=sheet;}`;
-  } else if (extension === ".svg" || extension === ".xml" || extension === ".html") {
-    productionCode = `exports.default="${escapeForDoubleQuote(originalCode)}";`;
+  /**
+   * Step 2: Wrap transformed code into CommonJS-compatible output.
+   */
+  let productionCode = transformedCode;
+
+  if (ext === ".json") {
+    productionCode = `exports.default=${transformedCode};`;
+  } else if (ext === ".css") {
+    productionCode =
+      `var raw="${escapeForDoubleQuote(transformedCode)}";` +
+      `exports.raw=raw;` +
+      `if(typeof CSSStyleSheet==="undefined"){exports.default=raw;}` +
+      `else{var sheet=new CSSStyleSheet();sheet.replaceSync(raw);exports.default=sheet;}`;
+  } else if (ext === ".svg" || ext === ".xml" || ext === ".html") {
+    productionCode = `exports.default="${escapeForDoubleQuote(transformedCode)}";`;
   }
 
+  /**
+   * Step 3: Deduplicate dependency metadata.
+   */
   const dependencies = {
     keys: {},
     values: []
   };
 
   if (extraction) {
-    for (let i = 0; i < extraction.meta.length; i++) {
-      let moduleKey = extraction.meta[i].module;
-      if (!dependencies.keys[moduleKey]) {
-        dependencies.values.push(extraction.meta[i]);
-        dependencies.keys[moduleKey] = 1;
+    for (const meta of extraction.meta) {
+      if (!dependencies.keys[meta.module]) {
+        dependencies.keys[meta.module] = 1;
+        dependencies.values.push(meta);
       }
     }
   }
@@ -135,60 +160,95 @@ function createNode(filename, separated = false) {
 }
 
 /**
- * createGraph(entry, outputFilePath)
- * -----------------------------------
- * Builds a dependency graph starting from entry file.
+ * createGraph(entry, outputFilePath, defaultNamespace)
+ * ----------------------------------------------------
+ * Builds the full dependency graph starting from the entry file.
  */
 function createGraph(entry, outputFilePath, defaultNamespace) {
   logger.info("[GRAPH] Creating dependency graph from entry:", entry);
 
   const entryNode = createNode(entry);
   const queue = [entryNode];
+
   const baseDir = path.dirname(path.resolve(entry)).replaceAll("\\", "/");
   const outputDir = normalizeId(path.dirname(outputFilePath));
 
-  entryNode.key = entryNode.id.replace(`${baseDir}/`, `${defaultNamespace}::`);
+  // Assign entry module key
+  entryNode.key = entryNode.id.replace(
+    `${baseDir}/`,
+    `${defaultNamespace}::`
+  );
 
   for (const node of queue) {
     node.mapping = {};
-    const dirname = path.dirname(node.filename);
+    const currentDir = path.dirname(node.filename);
 
     for (const dependency of node.dependencies) {
       const relativePath = dependency.module;
-      const absolutePath = normalizeId(path.join(dirname, relativePath));
 
+      /**
+       * Case 1: HTTP / HTTPS imports
+       */
       if (/^https?:\/\//.test(relativePath)) {
-        const actualUrl = new URL(relativePath);
+        const url = new URL(relativePath);
+        const namespace =
+          dependency.assertions.namespace || defaultNamespace;
 
-        // Clean and normalize namespace; use "&" as default if empty or missing
-        const actualNamespace = dependency.assertions.namespace || defaultNamespace;
-
-        // Compose module ID like "Namespace::path/to/file.js"
-        const moduleId = `${actualNamespace}::${actualUrl.pathname.slice(1)}`;
-
-        // Map the result to the dependency graph
+        const moduleId = `${namespace}::${url.pathname.slice(1)}`;
         node.mapping[relativePath] = moduleId;
-        
+
         logger.warn(`[GRAPH] External URL skipped: ${relativePath}`);
-      } else {
-        if (
-          [".js", ".mjs", ".json", ".css", ".svg", ".xml", ".html"].includes(path.extname(absolutePath))
-        ) {
-          logger.info(`[GRAPH] Adding dependency module: ${absolutePath}`);
-          const nextNode = createNode(absolutePath, dependency.type === "dynamic");
-          nextNode.dependent = node.id;
-          nextNode.key = absolutePath.replace(`${baseDir}/`, `${defaultNamespace}::`);
-          queue.push(nextNode);
-        } else {
-          logger.info(`[GRAPH] Copying asset dependency: ${absolutePath}`);
-          const relativeToEntry = path.relative(path.dirname(entry), absolutePath);
-          const outPath = normalizeId(path.join(outputDir, relativeToEntry));
-
-          processAndCopyFile(absolutePath, outPath).catch(logger.error);
-        }
-
-        node.mapping[relativePath] = absolutePath.replace(`${baseDir}/`, `${defaultNamespace}::`);
+        continue;
       }
+
+      /**
+       * Case 2: Local file imports
+       */
+      const absolutePath = normalizeId(
+        path.join(currentDir, relativePath)
+      );
+
+      const ext = path.extname(absolutePath);
+
+      if (
+        [".js", ".mjs", ".json", ".css", ".svg", ".xml", ".html"].includes(ext)
+      ) {
+        logger.info(`[GRAPH] Adding dependency module: ${absolutePath}`);
+
+        const childNode = createNode(
+          absolutePath,
+          dependency.type === "dynamic"
+        );
+
+        childNode.dependent = node.id;
+        childNode.key = absolutePath.replace(
+          `${baseDir}/`,
+          `${defaultNamespace}::`
+        );
+
+        queue.push(childNode);
+      } else {
+        /**
+         * Non-JS assets are copied directly to output directory.
+         */
+        logger.info(`[GRAPH] Copying asset dependency: ${absolutePath}`);
+
+        const relativeToEntry = path.relative(
+          path.dirname(entry),
+          absolutePath
+        );
+
+        const outPath = normalizeId(
+          path.join(outputDir, relativeToEntry)
+        );
+
+        processAndCopyFile(absolutePath, outPath).catch(logger.error);
+      }
+
+      node.mapping[relativePath] = absolutePath.replace(
+        `${baseDir}/`,
+        `${defaultNamespace}::`
+      );
     }
   }
 
@@ -196,108 +256,127 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
   return queue;
 }
 
+/**
+ * Bundle container indexed by entry module ID.
+ */
 const bundleFiles = {};
 
+/**
+ * createBundle(graph, host)
+ * --------------------------
+ * Groups graph nodes into bundles (entry bundle + dynamic bundles).
+ */
 function createBundle(graph, host) {
+  /**
+   * Step 1: Initialize entry bundle.
+   */
   bundleFiles[graph[0].id] = {
     entry: true,
     path: graph[0].id,
     files: [graph[0]],
-    modules: ``,
-    codes: ``
+    modules: "",
+    codes: ""
   };
 
+  /**
+   * Step 2: Create bundles for dynamically imported modules.
+   */
   for (let i = 1; i < graph.length; i++) {
-    const id = graph[i].id;
-    const dynamic = graph[i].separated;
+    const node = graph[i];
 
-    if (!bundleFiles[id] && dynamic) {
-      bundleFiles[id] = {
+    if (!bundleFiles[node.id] && node.separated) {
+      bundleFiles[node.id] = {
         entry: false,
-        path: id,
-        files: [graph[i]],
-        modules: ``,
-        codes: ``
+        path: node.id,
+        files: [node],
+        modules: "",
+        codes: ""
       };
     }
   }
 
+  /**
+   * Step 3: Attach non-dynamic modules to their parent bundles.
+   */
   for (let i = 1; i < graph.length; i++) {
-    const id = graph[i].id;
+    const node = graph[i];
 
-    if (!bundleFiles[id]) {
-      const dependentId = graph[i].dependent;
-      bundleFiles[dependentId].files.push(graph[i]);
+    if (!bundleFiles[node.id]) {
+      bundleFiles[node.dependent].files.push(node);
     }
   }
 
+  /**
+   * Step 4: Generate bundle code.
+   */
   for (const id in bundleFiles) {
-    const theBundle = bundleFiles[id];
+    const bundle = bundleFiles[id];
 
-    for (let i in theBundle.files) {
-      const mod = theBundle.files[i];
-
-      theBundle.modules += `"${mod.key}": [
-        function(require, exports, module, requireByHttp) {
+    for (const mod of bundle.files) {
+      bundle.modules += `"${mod.key}":[
+        function(require, exports, module, requireByHttp){
           ${mod.code}
         },
         ${JSON.stringify(mod.mapping)}
       ],`;
     }
 
-    const includeRuntime = theBundle.entry;
-    const entryId = theBundle.files[0].key;
+    const entryId = bundle.files[0].key;
 
-    if (includeRuntime) {
+    if (bundle.entry) {
       logger.info("[BUNDLE] Including runtime in bundle.");
-      theBundle.codes = minifyJS(`
-        ${RUNTIME_CODE(host, `{${theBundle.modules.slice(0, -1)}}`, `"${entryId}"`)}
-      `);
+
+      bundle.codes = minifyJS(
+        RUNTIME_CODE(
+          host,
+          `{${bundle.modules.slice(0, -1)}}`,
+          `"${entryId}"`
+        )
+      );
     } else {
       logger.info("[BUNDLE] Generating lightweight bundle (no runtime).");
-      theBundle.codes = minifyJS(`
-        (function(global, modules, entry) {
+
+      bundle.codes = minifyJS(`
+        (function(global, modules, entry){
           global["*pointers"]("&registry")(modules);
           global["*pointers"]("&require")(entry);
         })(
           typeof window !== "undefined" ? window : this,
-          {${theBundle.modules.slice(0, -1)}},
+          {${bundle.modules.slice(0, -1)}},
           "${entryId}"
         );
       `);
     }
 
-    delete theBundle.files;
-    delete theBundle.modules;
+    delete bundle.files;
+    delete bundle.modules;
   }
 
   return bundleFiles;
 }
 
 /**
- * generateOutput(outputFilePath, bundleResult)
- * ---------------------------------------------
- * Writes the final bundled code into the output file.
+ * generateOutput(outputFilePath, code)
+ * ------------------------------------
+ * Writes bundled output to disk.
  */
-function generateOutput(outputFilePath, bundleResult) {
+function generateOutput(outputFilePath, code) {
   logger.info(`[OUTPUT] Writing bundle to ${outputFilePath}`);
-  const outputDir = path.dirname(outputFilePath);
-  if (!fs.existsSync(outputDir)) {
-    fs.mkdirSync(outputDir, { recursive: true });
+
+  const dir = path.dirname(outputFilePath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
-  fs.writeFileSync(outputFilePath, bundleResult, "utf8");
+
+  fs.writeFileSync(outputFilePath, code, "utf8");
   logger.success(`[OUTPUT] Bundle successfully written to ${outputFilePath}`);
 }
 
 /**
  * main(options)
  * ---------------
- * Entry point of the bundler.
- * Coordinates the bundling process: building the dependency graph, minifying output,
- * handling separated modules, and writing the final bundle to disk.
- * 
- * This function can be called recursively (for separated modules),
- * where it will inherit the parent bundler state to ensure consistency.
+ * Bundler entry point.
+ * Orchestrates dependency analysis, bundling, minification, and output.
  */
 export default async function main({
   entry,
@@ -307,35 +386,29 @@ export default async function main({
   outputFilename = "index.js",
   uglified = false
 }) {
-  // Step 1: Log the start of the bundling process for the given entry file
   logger.info(`[MAIN] Starting bundler for entry: ${entry}`);
 
-  // Step 3: Determine the full path of the output file
-  // If no specific output file is provided, default to 'index.js' inside the output directory
-  const outputFilePath = ensureJsExtension(path.join(outputDir, outputFilename));
+  const outputFilePath = ensureJsExtension(
+    path.join(outputDir, outputFilename)
+  );
 
-  // Step 4: Build the dependency graph from the entry file
-  // This includes analyzing modules, their dependencies, and preparing transformed code
   const graph = createGraph(entry, outputFilePath, namespace);
+  const bundles = createBundle(graph, host);
 
-  const bundle = createBundle(graph, host);
-
-  for (const i in bundle) {
-    const mod = bundle[i];
-    const code = mod.codes;
+  for (const id in bundles) {
+    const bundle = bundles[id];
+    const code = bundle.codes;
 
     logger.info("[MAIN] Minifying generated code...");
     const result = !uglified ? code : await uglifyJS(code);
 
-    // Step 10: Write the final bundled output to the specified output file
-    if (mod.entry) {
+    if (bundle.entry) {
       generateOutput(outputFilePath, result);
     } else {
-      const _outputFilePath = ensureJsExtension(mapToDistPath(mod.path, outputDir)?.destination);
-      generateOutput(_outputFilePath, result);
+      const mapped = mapToDistPath(bundle.path, outputDir)?.destination;
+      generateOutput(ensureJsExtension(mapped), result);
     }
   }
 
-  // Final step: Log successful bundling completion
   logger.success("[MAIN] Bundling process completed successfully.");
 }
