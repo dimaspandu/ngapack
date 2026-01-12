@@ -61,7 +61,7 @@ export default function runTest(name, input, expected, final = false) {
       const total = results.length;
       const passed = results.filter(r => r).length;
       const failed = total - passed;
-      const percent = total === 0 ? 0 : ((passed/total) * 100).toFixed(2);
+      const percent = total === 0 ? 0 : ((passed / total) * 100).toFixed(2);
       return { name, total, passed, failed, "pass %": percent };
     });
 

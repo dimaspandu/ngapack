@@ -200,6 +200,28 @@ export default function tokenizer(source, opts = {}) {
     return true;
   }
 
+  // Returns the last non-trivia token emitted so far.
+  // Trivia tokens (whitespace, newlines, comments, shebangs)
+  // must be ignored for contextual decisions.
+  //
+  // This helper is critical for correctly distinguishing
+  // between regular expression literals and division operators,
+  // since whitespace and comments do not affect JavaScript grammar.
+  function lastSignificantToken() {
+    for (let i = tokens.length - 1; i >= 0; i--) {
+      const t = tokens[i];
+      if (
+        t.type !== "whitespace" &&
+        t.type !== "newline" &&
+        t.type !== "comment" &&
+        t.type !== "shebang"
+      ) {
+        return t;
+      }
+    }
+    return null;
+  }
+
   // Emit a token.
   function pushToken(type, value, startSnap, endSnap) {
     tokens.push({
@@ -622,8 +644,8 @@ export default function tokenizer(source, opts = {}) {
 
     const punct = matchPunctuator();
     if (punct) {
-      // If punctuator is "/", we may be reading a regex.
-      if (punct === "/" && regexAllowedAfter(tokens[tokens.length-1])) {
+      // "/" is ambiguous: it may start a regex literal or be a division operator.
+      if (punct === "/" && regexAllowedAfter(lastSignificantToken())) {
         readRegexLiteral();
         return;
       }

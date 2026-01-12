@@ -144,7 +144,24 @@ runTest(
   minifyJS(`
     const text = "A    lot        of      spaces";
   `),
-  "const text=\"A    lot        of      spaces\";",
+  "const text=\"A    lot        of      spaces\";"
+);
+
+/**
+ * MATH EXPRESSIONS & DIVISION
+ */
+
+runTest(
+  "Minify JS - division without spaces",
+  minifyJS(`const percent = total === 0 ? 0 : ((passed/total) * 100).toFixed(2);`),
+  "const percent=total===0?0:((passed/total)*100).toFixed(2);"
+);
+
+runTest(
+  "Minify JS - division with spaces",
+  minifyJS(`const percent = total === 0 ? 0 : ((passed / total) * 100).toFixed(2);`),
+  "const percent=total===0?0:((passed/total)*100).toFixed(2);",
   true
 );
+
 
