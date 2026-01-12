@@ -46,6 +46,15 @@ ngapack/
 
 ## Core Components
 
+> **Upstream references**
+>
+> * The **analyzer** logic is derived and adapted from:
+>   [https://github.com/dimaspandu/js-analyzer](https://github.com/dimaspandu/js-analyzer)
+> * The **runtime** loader and registry concepts are derived and adapted from:
+>   [https://github.com/dimaspandu/djs](https://github.com/dimaspandu/djs)
+>
+> These projects act as conceptual and practical references. The code in NGAPACK is intentionally reduced and refactored to fit the bundler's experimental goals.
+
 ### `analyzer.js`
 
 Responsible for **static analysis only**.
