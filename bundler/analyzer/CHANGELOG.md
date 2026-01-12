@@ -19,7 +19,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) 
 - Deterministic, token-based processing model.
 - Test harness with aggregated test runner.
 - Minifier supports safe operator spacing, comments, whitespace, and newline removal.
-- Example minification: `const percent = total === 0 ? 0 : ((passed/total) * 100).toFixed(2);` consistently minified.
+- Example minification:  
+  `const percent = total === 0 ? 0 : ((passed/total) * 100).toFixed(2);` consistently minified.
+- Explicit test coverage ensuring **multiline template literal whitespace and empty lines are preserved** during minification.
 
 ## Changed
 

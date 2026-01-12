@@ -147,6 +147,102 @@ runTest(
   "const text=\"A    lot        of      spaces\";"
 );
 
+runTest(
+  "Minify JS - multiline template literal (preserved by default)",
+  minifyJS(`
+    const raw = (\`
+      :root {
+        --accent: #2563eb;
+      }
+      body {
+        font-family: sans-serif;
+        background: #f6f7fb;
+        padding: 20px;
+      }
+      h1 {
+        color: var(--accent);
+      }
+      p.styled {
+        color: #10b981;
+        font-weight: bold;
+      }
+    \`);
+
+    if (typeof raw === "object") {
+      console.log("1");
+    } else {
+      console.log("0");
+    }
+  `),
+  "const raw=(`\n      :root {\n        --accent: #2563eb;\n      }\n      body {\n        font-family: sans-serif;\n        background: #f6f7fb;\n        padding: 20px;\n      }\n      h1 {\n        color: var(--accent);\n      }\n      p.styled {\n        color: #10b981;\n        font-weight: bold;\n      }\n    `);if(typeof raw===\"object\"){console.log(\"1\");}else{console.log(\"0\");}"
+);
+
+runTest(
+  "Minify JS - template literal preserves empty lines",
+  minifyJS(`
+    const raw = (\`
+      :root {
+        --accent: #2563eb;
+      }
+
+      body {
+        font-family: sans-serif;
+        background: #f6f7fb;
+        padding: 20px;
+      }
+
+      h1 {
+        color: var(--accent);
+      }
+
+      p.styled {
+        color: #10b981;
+        font-weight: bold;
+      }
+    \`);
+
+    if (typeof raw === "object") {
+      console.log("1");
+    } else {
+      console.log("0");
+    }
+  `),
+  "const raw=(`\n      :root {\n        --accent: #2563eb;\n      }\n\n      body {\n        font-family: sans-serif;\n        background: #f6f7fb;\n        padding: 20px;\n      }\n\n      h1 {\n        color: var(--accent);\n      }\n\n      p.styled {\n        color: #10b981;\n        font-weight: bold;\n      }\n    `);if(typeof raw===\"object\"){console.log(\"1\");}else{console.log(\"0\");}"
+);
+
+runTest(
+  "Minify JS - multiline template literal normalized to \\n",
+  minifyJS(
+    `
+      const raw = (\`
+        :root {
+          --accent: #2563eb;
+        }
+        body {
+          font-family: sans-serif;
+          background: #f6f7fb;
+          padding: 20px;
+        }
+        h1 {
+          color: var(--accent);
+        }
+        p.styled {
+          color: #10b981;
+          font-weight: bold;
+        }
+      \`);
+
+      if (typeof raw === "object") {
+        console.log("1");
+      } else {
+        console.log("0");
+      }
+    `,
+    { normalizeTemplateNewlines: true }
+  ),
+  "const raw=(`\\n        :root {\\n          --accent: #2563eb;\\n        }\\n        body {\\n          font-family: sans-serif;\\n          background: #f6f7fb;\\n          padding: 20px;\\n        }\\n        h1 {\\n          color: var(--accent);\\n        }\\n        p.styled {\\n          color: #10b981;\\n          font-weight: bold;\\n        }\\n      `);if(typeof raw===\"object\"){console.log(\"1\");}else{console.log(\"0\");}"
+);
+
 /**
  * MATH EXPRESSIONS & DIVISION
  */
