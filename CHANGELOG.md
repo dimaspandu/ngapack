@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.3] - 2026-01-13
+
+### Fixed
+- Prevent bundler crash when no dynamic imports are present
+- Fix incorrect bundle attachment logic where static modules could reference non-existent parent bundles
+- Safely handle missing parent modules (e.g. external HTTP imports or non-bundled assets) during bundle assignment
+
+### Refactored
+- Rewrite `createBundle()` to use explicit `bundleId` propagation instead of implicit parent lookup
+- Decouple module dependency relationships from bundle ownership
+- Make bundling logic robust against incomplete or non-topological dependency graphs
+
+### Internal
+- Improve defensive handling of edge cases in dependency graph to avoid runtime `undefined` access
+- Clarify conceptual separation between module graph construction and bundle generation
+
+---
+
 ## [1.0.2] - 2026-01-12
 
 ### Added

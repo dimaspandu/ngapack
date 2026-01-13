@@ -280,55 +280,81 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
  * Produces one entry bundle and multiple dynamic bundles if needed.
  */
 function createBundle(graph, host) {
-  /**
-   * Bundle container indexed by module ID.
-   */
-  const bundleFiles = {};
+  const bundles = Object.create(null);
+  const nodeMap = Object.create(null);
+
+  // Build fast lookup for nodes
+  for (const node of graph) {
+    nodeMap[node.id] = node;
+  }
 
   /**
-   * Step 1: Initialize entry bundle.
+   * Ensure bundle exists
    */
-  bundleFiles[graph[0].id] = {
-    entry: true,
-    path: graph[0].id,
-    files: [graph[0]],
-    modules: "",
-    codes: ""
-  };
-
-  /**
-   * Step 2: Create bundles for dynamically imported modules.
-   */
-  for (let i = 1; i < graph.length; i++) {
-    const node = graph[i];
-
-    if (node.separated && !bundleFiles[node.id]) {
-      bundleFiles[node.id] = {
-        entry: false,
-        path: node.id,
-        files: [node],
+  function ensureBundle(bundleId, entry = false) {
+    if (!bundles[bundleId]) {
+      bundles[bundleId] = {
+        entry,
+        path: bundleId,
+        files: [],
         modules: "",
         codes: ""
       };
     }
+    return bundles[bundleId];
   }
 
   /**
-   * Step 3: Attach non-dynamic modules to their parent bundles.
+   * STEP 0:
+   * Initialize entry bundle
+   */
+  const entryNode = graph[0];
+  entryNode.bundleId = entryNode.id;
+  ensureBundle(entryNode.bundleId, true);
+
+  /**
+   * STEP 1:
+   * Assign bundleId to every node
    */
   for (let i = 1; i < graph.length; i++) {
     const node = graph[i];
 
-    if (!bundleFiles[node.id]) {
-      bundleFiles[node.dependent].files.push(node);
+    // Dynamic import → own bundle
+    if (node.separated) {
+      node.bundleId = node.id;
+      ensureBundle(node.bundleId, false);
+      continue;
+    }
+
+    // Static import → inherit parent bundle
+    const parent = nodeMap[node.dependent];
+
+    if (parent && parent.bundleId) {
+      node.bundleId = parent.bundleId;
+    } else {
+      // Safety fallback (external / asset / missing parent)
+      logger.warn(
+        `[BUNDLE] Missing parent for ${node.id}, attached to entry bundle`
+      );
+      node.bundleId = entryNode.bundleId;
     }
   }
 
   /**
-   * Step 4: Generate final bundle code.
+   * STEP 2:
+   * Attach nodes to bundles
    */
-  for (const id in bundleFiles) {
-    const bundle = bundleFiles[id];
+  for (const node of graph) {
+    const bundle = bundles[node.bundleId];
+    bundle.files.push(node);
+  }
+
+  /**
+   * STEP 3:
+   * Generate final bundle code
+   */
+  for (const bundleId in bundles) {
+    const bundle = bundles[bundleId];
 
     for (const mod of bundle.files) {
       bundle.modules += `"${mod.key}":[
@@ -342,7 +368,7 @@ function createBundle(graph, host) {
     const entryId = bundle.files[0].key;
 
     if (bundle.entry) {
-      logger.info("[BUNDLE] Including runtime in bundle.");
+      logger.info("[BUNDLE] Including runtime in entry bundle");
 
       bundle.codes = minifyJS(
         RUNTIME_CODE(
@@ -352,7 +378,7 @@ function createBundle(graph, host) {
         )
       );
     } else {
-      logger.info("[BUNDLE] Generating lightweight bundle (no runtime).");
+      logger.info("[BUNDLE] Generating dynamic bundle");
 
       bundle.codes = minifyJS(`
         (function(global, modules, entry){
@@ -366,11 +392,12 @@ function createBundle(graph, host) {
       `);
     }
 
+    // Cleanup
     delete bundle.files;
     delete bundle.modules;
   }
 
-  return bundleFiles;
+  return bundles;
 }
 
 /**
