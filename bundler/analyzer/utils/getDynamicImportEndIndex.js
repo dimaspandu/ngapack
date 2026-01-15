@@ -55,8 +55,13 @@ export default function getDynamicImportEndIndex(tokens, startIndex) {
 
     i++; // skip "."
 
-    // Expect an identifier: then / catch / customName
-    if (!tokens[i] || tokens[i].type !== "identifier") break;
+    // Expect a property name: identifier or keyword (e.g. catch)
+    if (
+      !tokens[i] ||
+      (tokens[i].type !== "identifier" && tokens[i].type !== "keyword")
+    ) {
+      break;
+    }
     i++;
 
     // Expect "(" for the call

@@ -120,6 +120,22 @@ runTest(
 );
 
 // -------------------------------------------------------
+// 6b. Chained then + catch (catch is keyword)
+// -------------------------------------------------------
+runTest(
+  "Chained .then().catch() where catch is keyword",
+  getDynamicImportEndIndex(
+    [
+      kw("import"), p("("), str("x"), p(")"),
+      p("."), id("then"),  p("("), id("cb"),  p(")"),
+      p("."), kw("catch"), p("("), id("err"), p(")")
+    ],
+    0
+  ),
+  13
+);
+
+// -------------------------------------------------------
 // 7. Long chain: import("x").then(a).catch(b).finally(c)
 // -------------------------------------------------------
 runTest(
