@@ -239,18 +239,25 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
         );
 
         (async function () {
-          /**
-           * HTML assets are minified before being written to disk.
-           */
-          if (ext === ".html") {
-            const raw = await fsp.readFile(absolutePath, "utf8");
-            const minified = minifyHTML(raw);
+          try {
+            const outDir = path.dirname(outPath);
+            await fsp.mkdir(outDir, { recursive: true });
 
-            await fsp.writeFile(outPath, minified, "utf8");
+            /**
+             * HTML assets are minified before being written to disk.
+             */
+            if (ext === ".html") {
+              const raw = await fsp.readFile(absolutePath, "utf8");
+              const minified = minifyHTML(raw);
 
-            logger.success(`[COPY] Minified HTML written to ${outPath}`);
-          } else {
-            processAndCopyFile(absolutePath, outPath).catch(logger.error);
+              await fsp.writeFile(outPath, minified, "utf8");
+              logger.success(`[COPY] Minified HTML written to ${outPath}`);
+            } else {
+              await processAndCopyFile(absolutePath, outPath);
+              logger.success(`[COPY] Asset copied to ${outPath}`);
+            }
+          } catch (err) {
+            logger.error(err);
           }
         })();
       }

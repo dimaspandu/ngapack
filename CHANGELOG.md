@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.4] - 2026-01-20
+
+### Fixed
+- Ensure output directories are created before writing or copying non-JS assets
+- Prevent ENOENT errors when emitting HTML or static assets into nested output paths
+
+### Improved
+- Make asset emission behavior consistent with JS bundle output handling
+- Improve robustness of bundler when `outputDir` does not yet exist
+
+### Internal
+- Add defensive directory creation (`recursive: true`) for asset write paths
+- Align asset pipeline expectations with Node.js filesystem semantics
+
+---
+
 ## [1.0.3] - 2026-01-13
 
 ### Fixed
