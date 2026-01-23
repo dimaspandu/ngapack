@@ -27,6 +27,8 @@
 // Inserts spaces only when required to prevent invalid token merging.
 
 export default function stringifyCSSTokens(tokens) {
+  if (!Array.isArray(tokens) || tokens.length === 0) return "";
+  
   let out = "";
 
   for (let i = 0; i < tokens.length; i++) {

@@ -1,5 +1,6 @@
 import minifyCSS from "../main.js";
 import runTest from "../../../../utils/tester.js";
+import { CSS_MINIFY_LEVEL } from "../constants.js";
 
 /**
  * BASIC DECLARATIONS
@@ -244,6 +245,48 @@ runTest(
       border-radius: 8px;
     }
   `),
-  ".card{transform:translateY(10px);transition:transform 0.3s ease-in-out;background-color:#fff;border-radius:8px;}",
+  ".card{transform:translateY(10px);transition:transform 0.3s ease-in-out;background-color:#fff;border-radius:8px;}"
+);
+
+/**
+ * MINIFY LEVELS
+ */
+
+runTest(
+  "Minify CSS - SAFE level preserves token values",
+  minifyCSS(
+    `
+      .box {
+        width: 100px;
+        height: 50px;
+      }
+    `,
+    { level: CSS_MINIFY_LEVEL.SMART }
+  ),
+  ".box { width: 100px; height: 50px; }"
+);
+
+runTest(
+  "Minify CSS - DEEP level fully re-stringifies",
+  minifyCSS(
+    `
+      .box {
+        width: 100px;
+        height: 50px;
+      }
+    `,
+    { level: CSS_MINIFY_LEVEL.DEEP }
+  ),
+  ".box{width:100px;height:50px;}"
+);
+
+runTest(
+  "Minify CSS - SAFE avoids risky re-stringify",
+  minifyCSS(
+    `width: calc(100% - 20px);`,
+    { level: CSS_MINIFY_LEVEL.SAFE }
+  ),
+  "width: calc(100% - 20px);",
   true
 );
+
