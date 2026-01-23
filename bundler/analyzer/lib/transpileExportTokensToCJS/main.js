@@ -483,6 +483,37 @@ export default function transpileExportTokensToCJS(tokens) {
       ensureSemicolon(tokens, endIndex);
     }
 
+    // export default const app1
+    else if (
+      cur.type === "keyword" &&
+      cur.value === "export" &&
+      next(1) && next(2) && next(3) &&
+      next(1).type === "keyword" && next(1).value === "default" &&
+      (
+        next(2).type === "keyword" &&
+        (
+          next(2).value === "const" ||
+          next(2).value === "let" ||
+          next(2).value === "var"
+        )
+      )
+      &&
+      next(3).type === "identifier"
+    ) {
+      skippedIndex[idx] = 1;
+      skippedIndex[idx + 1] = 1;
+
+      exportTokens.push({ type: "identifier", value: "exports" });
+      exportTokens.push({ type: "punctuator", value: "." });
+      exportTokens.push({ type: "identifier", value: "default" });
+      exportTokens.push({ type: "punctuator", value: "=" });
+      exportTokens.push({ type: tokens[idx + 3].type, value: tokens[idx + 3].value });
+      exportTokens.push({ type: "punctuator", value: ";" });
+      
+      const endIndex = idx + 4;
+      ensureSemicolon(tokens, endIndex);
+    }
+
     // export default dynamicValue
     else if (
       cur.type === "keyword" &&

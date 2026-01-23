@@ -779,6 +779,77 @@ runTest(
  * 9. EXPORT DEFAULT CASES FOR VARIOUS TYPES 
  * ============================================================================ */
 
+runTest(
+  "Export default identifier from local const (no semicolon)",
+  runExportTranspileTest([
+    // const app1 = {};
+    { type: "keyword", value: "const" },
+    { type: "identifier", value: "app1" },
+    { type: "punctuator", value: "=" },
+    { type: "punctuator", value: "{" },
+    { type: "punctuator", value: "}" },
+    { type: "punctuator", value: ";" },
+
+    // export default app1
+    { type: "keyword", value: "export" },
+    { type: "keyword", value: "default" },
+    { type: "identifier", value: "app1" }
+  ]),
+  [
+    // const app1 = {};
+    { type: "keyword", value: "const" },
+    { type: "identifier", value: "app1" },
+    { type: "punctuator", value: "=" },
+    { type: "punctuator", value: "{" },
+    { type: "punctuator", value: "}" },
+    { type: "punctuator", value: ";" },
+
+    // exports.default = app1;
+    { type: "identifier", value: "exports" },
+    { type: "punctuator", value: "." },
+    { type: "keyword", value: "default" },
+    { type: "punctuator", value: "=" },
+    { type: "identifier", value: "app1" },
+    { type: "punctuator", value: ";" }
+  ]
+);
+
+runTest(
+  "Export default identifier from local const (with semicolon)",
+  runExportTranspileTest([
+    // const app2 = {};
+    { type: "keyword", value: "const" },
+    { type: "identifier", value: "app2" },
+    { type: "punctuator", value: "=" },
+    { type: "punctuator", value: "{" },
+    { type: "punctuator", value: "}" },
+    { type: "punctuator", value: ";" },
+
+    // export default app2;
+    { type: "keyword", value: "export" },
+    { type: "keyword", value: "default" },
+    { type: "identifier", value: "app2" },
+    { type: "punctuator", value: ";" }
+  ]),
+  [
+    // const app2 = {};
+    { type: "keyword", value: "const" },
+    { type: "identifier", value: "app2" },
+    { type: "punctuator", value: "=" },
+    { type: "punctuator", value: "{" },
+    { type: "punctuator", value: "}" },
+    { type: "punctuator", value: ";" },
+
+    // exports.default = app2;
+    { type: "identifier", value: "exports" },
+    { type: "punctuator", value: "." },
+    { type: "keyword", value: "default" },
+    { type: "punctuator", value: "=" },
+    { type: "identifier", value: "app2" },
+    { type: "punctuator", value: ";" }
+  ]
+);
+
 // Export default dynamic value (dynamicValue1)
 runTest(
   "Export default dynamicValue1",
