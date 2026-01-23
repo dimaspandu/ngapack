@@ -88,7 +88,7 @@ runTest(
 runTest(
   "Minify CSS - calc expression",
   minifyCSS(`width: calc(100% - 20px);`),
-  "width:calc(100%-20px);"
+  "width:calc(100% - 20px);"
 );
 
 /**
@@ -149,6 +149,101 @@ runTest(
       font-weight: bold;
     }
   `),
-  `:root{--accent:#2563eb;}body{font-family:sans-serif;background:#f6f7fb;padding:20px;}h1{color:var(--accent);}p.styled{color:#10b981;font-weight:bold;}`,
+  `:root{--accent:#2563eb;}body{font-family:sans-serif;background:#f6f7fb;padding:20px;}h1{color:var(--accent);}p.styled{color:#10b981;font-weight:bold;}`
+);
+
+/**
+ * ADJACENT VALUES
+ */
+
+runTest(
+  "Minify CSS - transform with time value",
+  minifyCSS(`transition: transform 0.2s;`),
+  "transition:transform 0.2s;"
+);
+
+runTest(
+  "Minify CSS - margin shorthand with auto",
+  minifyCSS(`margin: 0 auto;`),
+  "margin:0 auto;"
+);
+
+/**
+ * MEDIA QUERIES
+ */
+
+runTest(
+  "Minify CSS - @media with multiple keywords",
+  minifyCSS(`@media screen and (max-width: 540px) { body { font-size: 14px; } }`),
+  "@media screen and(max-width:540px){body{font-size:14px;}}"
+);
+
+/**
+ * HASHES & COLORS
+ */
+
+runTest(
+  "Minify CSS - hex color with hash",
+  minifyCSS(`#header { color: #ff6f61; }`),
+  "#header{color:#ff6f61;}"
+);
+
+/**
+ * PSEUDO-CLASSES & COMBINATORS
+ */
+
+runTest(
+  "Minify CSS - pseudo-class hover",
+  minifyCSS(`.btn:hover { opacity: 0.8; }`),
+  ".btn:hover{opacity:0.8;}"
+);
+
+runTest(
+  "Minify CSS - combinators",
+  minifyCSS(`ul > li + li { margin-top: 10px; }`),
+  "ul>li+li{margin-top:10px;}"
+);
+
+/**
+ * FUNCTION VALUES
+ */
+
+runTest(
+  "Minify CSS - calc with spaces",
+  minifyCSS(`width: calc(100% - 20px);`),
+  "width:calc(100% - 20px);"
+);
+
+runTest(
+  "Minify CSS - nested function",
+  minifyCSS(`background: linear-gradient(to right, red, rgba(0,0,0,0.5));`),
+  "background:linear-gradient(to right,red,rgba(0,0,0,0.5));"
+);
+
+/**
+ * STRINGS WITH QUOTES
+ */
+
+runTest(
+  "Minify CSS - single quotes string",
+  minifyCSS(`font-family: 'Nunito', sans-serif;`),
+  "font-family:'Nunito',sans-serif;"
+);
+
+/**
+ * COMPREHENSIVE EDGE CASE
+ */
+
+runTest(
+  "Minify CSS - full component edge case",
+  minifyCSS(`
+    .card {
+      transform: translateY(10px);
+      transition: transform 0.3s ease-in-out;
+      background-color: #fff;
+      border-radius: 8px;
+    }
+  `),
+  ".card{transform:translateY(10px);transition:transform 0.3s ease-in-out;background-color:#fff;border-radius:8px;}",
   true
 );

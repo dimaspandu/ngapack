@@ -20,17 +20,17 @@ import stringifyCSSTokens from "../../stringifyTokens/css/main.js";
  * @returns {string} Minified CSS output
  */
 export default function minifyCSS(code) {
-  if (typeof code !== "string" || code.length === 0) return "";
+  if (typeof code !== "string" || !code) return "";
 
   const tokens = cssTokenizer(code);
 
-  // Remove formatting-only tokens
-  const cleanedTokens = tokens.filter(
+  // remove only non-semantic tokens
+  const cleaned = tokens.filter(
     (t) =>
+      t.type !== "comment" &&
       t.type !== "newline" &&
-      t.type !== "whitespace" &&
-      t.type !== "comment"
+      t.type !== "whitespace"
   );
 
-  return stringifyCSSTokens(cleanedTokens);
+  return stringifyCSSTokens(cleaned);
 }
