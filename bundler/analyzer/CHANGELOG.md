@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+# [1.2.0] - 2026-01-25
+
+## Added
+
+- SAFE mode whitespace normalization:
+  - Collapses consecutive or long whitespace tokens into a single space.
+  - Automatically trims leading and trailing whitespace in SAFE output.
+- Regression tests for CSS token adjacency handling, including:
+  - `dimension + hash` (e.g. `1px #fff`)
+  - Integration coverage for SAFE vs DEEP behavior.
+
+## Changed
+
+- SAFE minification behavior updated:
+  - No longer preserves original indentation or excessive spacing.
+  - Guarantees clean, single-space normalized output without re-stringification.
+- SAFE mode output is now deterministic and idempotent.
+
+## Fixed
+
+- Fixed invalid CSS output in DEEP mode where `dimension` followed by `hash`
+  could merge without required whitespace (e.g. `1px#fff`).
+- Prevent leading and trailing whitespace artifacts in SAFE mode output.
+
+---
+
 # [1.1.0] - 2026-01-23
 
 ## Added

@@ -253,40 +253,52 @@ runTest(
  */
 
 runTest(
-  "Minify CSS - SAFE level preserves token values",
+  "Minify CSS - DEEP level fully re-stringifies (default)",
   minifyCSS(
     `
       .box {
         width: 100px;
         height: 50px;
-      }
-    `,
-    { level: CSS_MINIFY_LEVEL.SMART }
-  ),
-  ".box { width: 100px; height: 50px; }"
-);
-
-runTest(
-  "Minify CSS - DEEP level fully re-stringifies",
-  minifyCSS(
-    `
-      .box {
-        width: 100px;
-        height: 50px;
+        border: solid 1px #000000;
       }
     `,
     { level: CSS_MINIFY_LEVEL.DEEP }
   ),
-  ".box{width:100px;height:50px;}"
+  ".box{width:100px;height:50px;border:solid 1px #000000;}"
 );
 
 runTest(
   "Minify CSS - SAFE avoids risky re-stringify",
   minifyCSS(
-    `width: calc(100% - 20px);`,
+    `
+      .box {
+        width: 100px;
+        height: 50px;
+      }
+
+      .box__container {
+        width: calc(100% - 20px);
+      }
+    `,
     { level: CSS_MINIFY_LEVEL.SAFE }
   ),
-  "width: calc(100% - 20px);",
+  ".box { width: 100px; height: 50px; } .box__container { width: calc(100% - 20px); }"
+);
+
+runTest(
+  "Minify CSS - dimension followed by hex color",
+  minifyCSS(`border: solid 1px #fff;`),
+  "border:solid 1px #fff;"
+);
+
+runTest(
+  "Minify CSS - SAFE preserves whitespace between dimension and color",
+  minifyCSS(
+    `border: solid 1px #fff;`,
+    { level: CSS_MINIFY_LEVEL.SAFE }
+  ),
+  "border: solid 1px #fff;",
   true
 );
+
 

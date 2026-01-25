@@ -2,6 +2,7 @@ import fs from "fs";
 import fsp from "fs/promises";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
+import { CSS_MINIFY_LEVEL } from "./analyzer/lib/minifier/css/constants.js";
 
 import {
   convertESMToCJSWithMeta,
@@ -88,7 +89,7 @@ function createNode(filename, separated = false) {
    */
   const transformedCode = (() => {
     if (ext === ".css") {
-      return minifyCSS(rawCode);
+      return minifyCSS(rawCode, { level: CSS_MINIFY_LEVEL.SAFE });
     }
 
     if (ext === ".svg" || ext === ".xml") {

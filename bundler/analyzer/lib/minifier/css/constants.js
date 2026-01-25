@@ -1,5 +1,4 @@
 export const CSS_MINIFY_LEVEL = {
-  SAFE: "safe",     // strip comments only
-  SMART: "smart",   // normalize whitespace
-  DEEP: "deep"      // stringify tokens
+  SAFE: "safe", // Remove comments and newlines only (preserve whitespace)
+  DEEP: "deep"  // Fully minify by re-stringifying CSS tokens
 };

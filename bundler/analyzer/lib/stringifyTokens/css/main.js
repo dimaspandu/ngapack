@@ -61,10 +61,10 @@ function isWord(t) {
 function needsSpace(a, b) {
   if (!a || !b) return false;
 
-  // word + word  (media screen, and, etc)
+  // word + word (media screen, and, etc)
   if (isWord(a) && isWord(b)) return true;
 
-  // identifier + number/dimension  (transform 0.2s)
+  // identifier + number/dimension (solid 1px, transform 0.2s)
   if (
     a.type === "identifier" &&
     (b.type === "number" || b.type === "dimension")
@@ -76,8 +76,15 @@ function needsSpace(a, b) {
     b.type === "identifier"
   ) return true;
 
+  // number/dimension + hash (1px #fff)
+  if (
+    (a.type === "number" || a.type === "dimension") &&
+    b.type === "hash"
+  ) return true;
+
   // at_keyword + identifier (@media screen)
   if (a.type === "at_keyword" && b.type === "identifier") return true;
 
   return false;
 }
+

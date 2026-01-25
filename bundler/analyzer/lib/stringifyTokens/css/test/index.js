@@ -116,6 +116,40 @@ runTest(
 runTest(
   "Invalid input",
   stringifyCSSTokens(undefined),
-  "",
+  ""
+);
+
+/**
+ * DIMENSIONS AND COLORS
+ */
+
+runTest(
+  "CSS - dimension followed by hex color requires space",
+  stringifyCSSTokens([
+    { type: "identifier", value: "border" },
+    { type: "punctuator", value: ":" },
+    { type: "whitespace", value: " " },
+    { type: "identifier", value: "solid" },
+    { type: "whitespace", value: " " },
+    { type: "dimension", value: "1px" },
+    { type: "whitespace", value: " " },
+    { type: "hash", value: "#000000" },
+    { type: "punctuator", value: ";" }
+  ]),
+  "border: solid 1px #000000;"
+);
+
+runTest(
+  "CSS - dimension + hash without whitespace tokens",
+  stringifyCSSTokens([
+    { type: "identifier", value: "border" },
+    { type: "punctuator", value: ":" },
+    { type: "identifier", value: "solid" },
+    { type: "dimension", value: "1px" },
+    { type: "hash", value: "#fff" },
+    { type: "punctuator", value: ";" }
+  ]),
+  "border:solid 1px #fff;",
   true
 );
+
