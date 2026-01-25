@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.5] - 2026-01-25
+
+### Improved
+- Improve internal CSS minification behavior via analyzer updates:
+  - Normalize excessive whitespace in SAFE CSS minification mode.
+  - Ensure deterministic and clean CSS output without altering grammar.
+- Improve CSS token re-stringification reliability in DEEP mode by enforcing
+  required spacing between adjacent values (e.g. `1px #fff`).
+
+### Internal
+- Update analyzer CSS minifier to fix token adjacency edge cases.
+- Add regression coverage for CSS whitespace normalization and value boundaries.
+- Align analyzer output consistency with ngapack’s deterministic bundling goals.
+
+---
+
 ## [1.0.4] - 2026-01-20
 
 ### Fixed
