@@ -339,6 +339,24 @@ runTest(
 );
 
 /* ---------------------------------------------
+ * 5.x Import - side effect only (minimal tokens)
+ * --------------------------------------------- */
+runTest(
+  "Import - side effect only (module-7.1)",
+  transpileImportTokensToCJSPreprocessor([
+    { type: "keyword", value: "import" },
+    { type: "string", value: "\"module-7.1\"" }
+  ]),
+  [
+    { type: "identifier", value: "require" },
+    { type: "punctuator", value: "(" },
+    { type: "string", value: "\"module-7.1\"" },
+    { type: "punctuator", value: ")" },
+    { type: "punctuator", value: ";" }
+  ]
+);
+
+/* ---------------------------------------------
  * 6. Import - dynamic
  * --------------------------------------------- */
 runTest(
