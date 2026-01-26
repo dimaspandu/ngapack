@@ -16,7 +16,8 @@
  * are copied (or processed) into the output directory.
  * They are not consumed by JavaScript at runtime.
  */
-import "./assets/favicon.ico"; // copy favicon to public
+import "./assets/favicon.ico"; // copy assets/favicon.ico to public
+import "./global.css";         // copy global.css to public
 import "./index.html";         // copy index.html to public
 
 /**
@@ -24,8 +25,23 @@ import "./index.html";         // copy index.html to public
  */
 import runTest from "./tester.js";
 import greetings from "./greetings.js";
+import entryStyle from "./entry.module.css" with { type: "css" };
+import appendStyleSheet from "./appendStyleSheet.js";
 import sheetToCanonicalObject from "./sheetToCanonicalObject.js";
 import Unnecessary from "./internal/unnecessary.js";
+
+/**
+ * Attach the entry CSS module to the document.
+ *
+ * This call verifies that:
+ * - CSS modules exported by ngapack can be consumed at runtime
+ * - The exported value is either a native CSSStyleSheet (preferred),
+ *   or a raw CSS string fallback in unsupported environments
+ * - The stylesheet is successfully applied to the document
+ *
+ * This also serves as a smoke test for the CSS module runtime pipeline.
+ */
+appendStyleSheet(entryStyle);
 
 /**
  * Execute all integration tests.
@@ -61,7 +77,7 @@ async function runAllTests() {
   /**
    * 3. Dynamic JSON module test.
    */
-  const colors = await import("./dynamic/colors.json", {
+  const colors = await import("./dynamic/colors.module.json", {
     with: { type: "json" }
   });
   runTest(
@@ -77,7 +93,7 @@ async function runAllTests() {
   /**
    * 4. Dynamic CSS module test with explicit namespace.
    */
-  const styles = await import("./dynamic/styles.css", {
+  const styles = await import("./dynamic/styles.module.css", {
     namespace: "DynamicCSS",
     with: { type: "css" }
   });
@@ -105,7 +121,10 @@ async function runAllTests() {
    * Fallback to raw CSS string otherwise.
    */
   try {
-    styles.default instanceof CSSStyleSheet;
+    // Accessing CSSStyleSheet may throw in unsupported runtimes
+    if (!(styles.default instanceof CSSStyleSheet)) {
+      throw new Error("CSSStyleSheet not supported");
+    }
 
     runTest(
       "Styles Module Dynamic CSS (native CSSStyleSheet)",
@@ -163,6 +182,7 @@ async function runAllTests() {
    * 7. Remote microfrontend module test.
    */
   try {
+    // This remote module is intentionally external and may be unavailable.
     const somewhere = await import(
       "https://djsmicrofrontends.netlify.app/resources/somewhere.js",
       { namespace: "MicroFrontend" }

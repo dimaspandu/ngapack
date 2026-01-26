@@ -1,1 +1,8 @@
+# Test output directories
+#
+# Currently, test builds are emitted into the "public" directory.
+# Some users or environments may prefer using "dist" instead.
+# Both directories contain generated artifacts and should not be
+# tracked in version control.
 test/public/
+test/dist/

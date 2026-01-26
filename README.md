@@ -2,43 +2,64 @@
 
 ## Overview
 
-NGAPACK is a lightweight experimental JavaScript bundler focused on **semantic correctness**, **deterministic output**, and **runtime-oriented module loading** rather than aggressive build-time transformations.
+NGAPACK is a **lightweight experimental JavaScript bundler** that focuses on **semantic correctness**, **deterministic output**, and **runtime-oriented module loading**.
 
-The project is intentionally minimal and explicit, making it suitable for:
+Instead of aggressive build-time transformations, NGAPACK is designed to:
 
-* studying how modern ESM bundlers work internally
-* experimenting with dynamic imports, non-JS assets, and microfrontends
-* validating browser runtime behavior rather than optimizing for size
+* preserve native ESM semantics as much as possible
+* validate how code actually behaves in the browser
+* make bundler internals easy to inspect and reason about
+
+This makes NGAPACK suitable for:
+
+* learning how modern ESM bundlers work internally
+* experimenting with dynamic imports and non-JS assets
+* prototyping microfrontend and runtime-loading concepts
 
 ---
 
-## High-level Architecture
+## Project Structure
+
+Based on the current codebase, NGAPACK is organized as follows:
 
 ```
 ngapack/
-├─ bundler/
-│  ├─ analyzer/
-│  ├─ helper/
-│  ├─ runtime/
+├─ bundler/                # Core bundler implementation
+│  ├─ analyzer/            # Module analysis logic
+│  ├─ helper/              # Shared bundler utilities
+│  ├─ runtime/             # Browser runtime helpers
 │  ├─ analyzer.js
 │  ├─ helper.js
-│  └─ index.js
+│  └─ index.js             # Bundler entry point
 │
-├─ test/
-│  ├─ src/
-│  │  ├─ assets/
-│  │  ├─ dynamic/
-│  │  ├─ internal/
-│  │  ├─ entry.js
+├─ test/                   # Integration & spec-style tests
+│  ├─ public/              # Static assets served by dev server
+│  ├─ src/                 # Test application source
+│  │  ├─ assets/           # Images / non-JS assets
+│  │  ├─ dynamic/          # Dynamic import experiments
+│  │  │  ├─ colors.module.json
+│  │  │  ├─ styles.module.css
+│  │  │  ├─ twina.js
+│  │  │  ├─ twinb.js
+│  │  │  └─ twins.js
+│  │  ├─ internal/         # Internal shared test modules
+│  │  ├─ appendStyleSheet.js
+│  │  ├─ entry.js          # Canonical test entry
+│  │  ├─ entry.module.css
+│  │  ├─ global.css
 │  │  ├─ greetings.js
 │  │  ├─ index.html
+│  │  ├─ index.js
+│  │  ├─ rpc.js
+│  │  ├─ hail.js
 │  │  ├─ sheetToCanonicalObject.js
 │  │  └─ tester.js
-│  ├─ public/
-│  ├─ index.js
-│  └─ serve.js
+│  ├─ index.js             # Test runner
+│  └─ serve.js             # Minimal dev HTTP server
 │
 ├─ .gitignore
+├─ CHANGELOG.md
+├─ LICENSE
 └─ README.md
 ```
 
@@ -48,21 +69,25 @@ ngapack/
 
 > **Upstream references**
 >
-> * The **analyzer** logic is derived and adapted from:
+> * Analyzer concepts are adapted from:
 >   [https://github.com/dimaspandu/js-analyzer](https://github.com/dimaspandu/js-analyzer)
-> * The **runtime** loader and registry concepts are derived and adapted from:
+> * Runtime loader & registry ideas are adapted from:
 >   [https://github.com/dimaspandu/djs](https://github.com/dimaspandu/djs)
 >
-> These projects act as conceptual and practical references. The code in NGAPACK is intentionally reduced and refactored to fit the bundler's experimental goals.
+> These repositories act as conceptual references. NGAPACK intentionally simplifies and refactors the ideas to fit its experimental goals.
 
-### `analyzer.js`
+---
+
+### `bundler/analyzer.js`
 
 Responsible for **static analysis only**.
 
+Capabilities:
+
 * Parses ES modules
 * Extracts dependency metadata
-* Detects static vs dynamic imports
-* Identifies non-JS assets (HTML, CSS, JSON, images)
+* Distinguishes static vs dynamic imports
+* Detects non-JS assets (CSS, JSON, HTML, images)
 
 Design constraints:
 
@@ -80,86 +105,91 @@ Responsibilities:
 
 * Builds the dependency graph
 * Resolves module IDs and namespaces
-* Emits bundled JavaScript output
-* Copies or processes non-JS assets
+* Coordinates output generation
+* Delegates runtime helpers and asset handling
 
-Notes:
+Design notes:
 
-* Graph construction is synchronous by design
-* Output emission is the only phase allowed to touch the filesystem
+* Dependency graph construction is synchronous by design
+* Filesystem access is restricted to the emission phase
 
 ---
 
-### `runtime/`
+### `bundler/runtime/`
 
-Browser-only runtime utilities.
+Browser-only runtime utilities injected into bundle output.
 
-Contains:
+Includes:
 
 * Module registry
 * Dynamic loader helpers
-* CSS and JSON module handling logic
+* CSS module application logic
+* JSON module handling
 
-Design rules:
+Rules:
 
-* Must not depend on Node.js APIs
+* Must not rely on Node.js APIs
 * Must work in plain browser environments
-* Should degrade gracefully when features are unsupported
+* Should degrade gracefully when features are unavailable
 
 ---
 
 ## Test System (`test/`)
 
-The `test` folder serves as an **integration and specification suite**, not unit tests.
+The `test` directory functions as an **integration and behavioral specification suite**, not unit tests.
 
 ### Key ideas
 
-* Tests describe **expected semantic behavior**, not implementation details
-* All tests are executed through a real browser-like runtime
-* Bundler output is validated via runtime execution
+* Tests describe **expected semantics**, not implementation details
+* Bundled output is executed in a real browser-like environment
+* Success is determined by runtime behavior, not snapshots
+
+---
 
 ### `test/src/entry.js`
 
 Acts as the canonical integration entry point.
 
-It validates:
+Validates:
 
 1. Static ES module imports
 2. Dynamic JavaScript imports
 3. Dynamic JSON modules
-4. Dynamic CSS modules (with namespace support)
-5. Multiple dynamic bundles sharing internal dependencies
-6. Remote microfrontend modules loaded over HTTP
+4. Dynamic CSS modules (including namespace isolation)
+5. Multiple dynamic chunks sharing internal dependencies
+6. Runtime-loaded modules over HTTP (microfrontend-style)
 
-Non-JS imports such as `index.html` or images are intentionally imported **for side effects only**, to verify correct asset emission.
+Non-JS imports (HTML, CSS, images) are intentionally imported **for side effects**, to validate correct asset emission and runtime behavior.
 
 ---
 
 ### Canonical CSS Normalization
 
-`sheetToCanonicalObject.js` defines the **semantic CSS contract** used by tests.
+`sheetToCanonicalObject.js` defines the **semantic CSS contract** used by the test suite.
 
 Purpose:
 
-* Remove CSSOM-expanded noise
+* Remove CSSOM expansion noise
 * Normalize shorthand properties
 * Enforce deterministic property ordering
 
-This file is **not a general-purpose utility**.
+This file is **not a general-purpose CSS utility**.
 
-Any change to canonical normalization rules is considered a **breaking semantic change** and requires test updates.
+Any modification to its normalization rules is considered a **breaking semantic change** and requires corresponding test updates.
 
 ---
 
 ### `serve.js`
 
-A minimal static HTTP server used for manual testing.
+A minimal static HTTP server used for development and manual testing.
+
+Features:
 
 * Serves files from `test/public`
 * Adds permissive CORS headers
 * Avoids external dependencies
 
-This server exists only for development and demonstration purposes.
+This server exists purely for demonstration and debugging purposes.
 
 ---
 
@@ -168,15 +198,15 @@ This server exists only for development and demonstration purposes.
 * Prefer semantic correctness over aggressive optimization
 * Avoid hidden magic or implicit behavior
 * Keep runtime behavior explicit and inspectable
-* Separate *analysis*, *bundling*, and *runtime* responsibilities clearly
+* Clearly separate analysis, bundling, and runtime concerns
 
-NGAPACK is intentionally small so contributors can understand the full system end-to-end.
+NGAPACK is intentionally small so contributors can understand the entire system end-to-end.
 
 ---
 
 ## Contribution Notes
 
 * Keep analyzer logic pure and side-effect free
-* Do not introduce Node.js APIs into the runtime
+* Do not introduce Node.js APIs into runtime code
 * Treat canonical logic as a specification, not a helper
 * Favor clarity over cleverness

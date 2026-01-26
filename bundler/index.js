@@ -14,6 +14,8 @@ import {
 import {
   ensureJsExtension,
   escapeForDoubleQuote,
+  isAssetExtension,
+  isModuleAsset,
   logger,
   mapToDistPath,
   processAndCopyFile,
@@ -71,6 +73,46 @@ function normalizeId(p) {
 }
 
 /**
+ * Copies a non-module asset to the output directory.
+ * HTML and CSS assets are minified before being written to disk.
+ *
+ * This function is intentionally async and fire-and-forget,
+ * as asset copying does not participate in the module graph.
+ */
+async function copyAssetToOutput({
+  absolutePath,
+  outPath,
+  ext
+}) {
+  try {
+    await fsp.mkdir(path.dirname(outPath), { recursive: true });
+
+    if (ext === ".html") {
+      const raw = await fsp.readFile(absolutePath, "utf8");
+      const minified = minifyHTML(raw);
+
+      await fsp.writeFile(outPath, minified, "utf8");
+      logger.success(`[COPY] Minified HTML written to ${outPath}`);
+
+    } else if (ext === ".css") {
+      const raw = await fsp.readFile(absolutePath, "utf8");
+      const minified = minifyCSS(raw, {
+        level: CSS_MINIFY_LEVEL.SAFE
+      });
+
+      await fsp.writeFile(outPath, minified, "utf8");
+      logger.success(`[COPY] Minified CSS written to ${outPath}`);
+
+    } else {
+      await processAndCopyFile(absolutePath, outPath);
+      logger.success(`[COPY] Asset copied to ${outPath}`);
+    }
+  } catch (err) {
+    logger.error(err);
+  }
+}
+
+/**
  * createNode(filename, separated)
  * --------------------------------
  * Reads and transforms a source file into a dependency graph node.
@@ -92,7 +134,7 @@ function createNode(filename, separated = false) {
       return minifyCSS(rawCode, { level: CSS_MINIFY_LEVEL.SAFE });
     }
 
-    if (ext === ".svg" || ext === ".xml") {
+    if (ext === ".svg" || ext === ".xml" || ext === ".html") {
       return minifyHTML(rawCode);
     }
 
@@ -107,18 +149,35 @@ function createNode(filename, separated = false) {
   /**
    * Step 2: Wrap transformed output into CommonJS-compatible exports.
    */
+
+  /**
+   * At this point, createNode() is only called for files that are already
+   * classified as modules by createGraph().
+   *
+   * The ".module." check below is intentionally kept as a defensive measure
+   * to make the module-wrapping logic explicit and future-proof, in case
+   * createNode() is reused or called directly in the future.
+   */
+  const isModule = filename.includes(".module.");
+
   let productionCode = transformedCode;
 
-  if (ext === ".json") {
+  if (ext === ".json" && isModule) {
     productionCode = `exports.default=${transformedCode};`;
-  } else if (ext === ".css") {
+
+  } else if (ext === ".css" && isModule) {
     productionCode =
       `var raw="${escapeForDoubleQuote(transformedCode)}";` +
       `exports.raw=raw;` +
       `if(typeof CSSStyleSheet==="undefined"){exports.default=raw;}` +
       `else{var sheet=new CSSStyleSheet();sheet.replaceSync(raw);exports.default=sheet;}`;
-  } else if (ext === ".svg" || ext === ".xml") {
-    productionCode = `exports.default="${escapeForDoubleQuote(transformedCode)}";`;
+
+  } else if (
+    (ext === ".svg" || ext === ".xml" || ext === ".html") &&
+    isModule
+  ) {
+    productionCode =
+      `exports.default="${escapeForDoubleQuote(transformedCode)}";`;
   }
 
   /**
@@ -206,10 +265,12 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
       );
 
       const ext = path.extname(absolutePath);
+      const isJS = [".js", ".mjs"].includes(ext);
+      const isModule =
+        isJS ||
+        (isAssetExtension(ext) && isModuleAsset(absolutePath));
 
-      if (
-        [".js", ".mjs", ".json", ".css", ".svg", ".xml"].includes(ext)
-      ) {
+      if (isModule) {
         logger.info(`[GRAPH] Adding dependency module: ${absolutePath}`);
 
         const childNode = createNode(
@@ -239,36 +300,23 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
           path.join(outputDir, relativeToEntry)
         );
 
-        (async function () {
-          try {
-            const outDir = path.dirname(outPath);
-            await fsp.mkdir(outDir, { recursive: true });
-
-            /**
-             * HTML assets are minified before being written to disk.
-             */
-            if (ext === ".html") {
-              const raw = await fsp.readFile(absolutePath, "utf8");
-              const minified = minifyHTML(raw);
-
-              await fsp.writeFile(outPath, minified, "utf8");
-              logger.success(`[COPY] Minified HTML written to ${outPath}`);
-            } else {
-              await processAndCopyFile(absolutePath, outPath);
-              logger.success(`[COPY] Asset copied to ${outPath}`);
-            }
-          } catch (err) {
-            logger.error(err);
-          }
-        })();
+        copyAssetToOutput({
+          absolutePath,
+          outPath,
+          ext
+        });
       }
 
       /**
        * Register module mapping for resolvable extensions only.
        */
-      if (
-        [".js", ".mjs", ".json", ".css", ".svg", ".xml"].includes(ext)
-      ) {
+      
+      /**
+       * Only register runtime mappings for files that are actually bundled
+       * as modules. Non-module assets must never appear in the module map,
+       * otherwise the runtime would attempt to require a non-existent module.
+       */
+      if (isModule) {
         node.mapping[relativePath] = absolutePath.replace(
           `${baseDir}/`,
           `${defaultNamespace}::`

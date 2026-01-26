@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+---
+
+## [1.1.0] - 2026-01-26
+
+### Added
+- Introduce explicit `.module.*` convention for asset modules (CSS, SVG, HTML, XML, JSON)
+- Add helper utilities to clearly distinguish module assets from plain static assets
+- Add integration specification covering:
+  - Static and dynamic JS modules
+  - Dynamic JSON and CSS modules
+  - CSSStyleSheet runtime fallback behavior
+  - Remote HTTP microfrontend modules
+
+### Changed
+- Non-module assets (`.css`, `.svg`, `.html`, `.xml`, `.json` without `.module.`)
+  are no longer bundled as JavaScript modules and are emitted as static assets instead
+- Asset handling logic is now centralized and consistent across:
+  - dependency graph construction
+  - runtime module mapping
+  - output emission
+- Non-module CSS assets are minified using SAFE CSS minification before emission
+
+### Improved
+- Make module graph construction deterministic by ensuring only bundled modules
+  are registered in runtime mappings
+- Clarify and document asset vs module behavior throughout the bundler pipeline
+- Improve code readability with explicit decision points and defensive comments
+
+### Internal
+- Refactor asset handling paths to eliminate implicit behavior
+- Add helper abstractions for asset detection and module qualification
+- Improve maintainability and future-proofing of the bundler core
+
+---
+
 ## [1.0.5] - 2026-01-25
 
 ### Improved
