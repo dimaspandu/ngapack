@@ -104,7 +104,8 @@ The orchestration layer of NGAPACK.
 Responsibilities:
 
 * Builds the dependency graph
-* Resolves module IDs and namespaces
+* Resolves module identities and namespaces
+* Enforces namespace-based isolation boundaries
 * Coordinates output generation
 * Delegates runtime helpers and asset handling
 
@@ -134,6 +135,29 @@ Rules:
 
 ---
 
+## Namespace & Module Isolation
+
+NGAPACK introduces the concept of **bundle-level namespaces** to provide
+explicit logical isolation between independently built module graphs.
+
+A namespace represents a **module identity boundary**, not just a label.
+
+Namespaces are used to:
+
+* Prevent module identity collisions across bundles
+* Scope dynamic imports at runtime
+* Enable safe microfrontend-style loading
+* Allow multiple independent bundles to coexist in the same environment
+
+A namespace must match between the **bundle producer** and the **bundle consumer**.
+If a dynamic import references a bundle with a different namespace, it is treated
+as an isolated module graph.
+
+This mechanism is a foundational design choice in NGAPACK and is exercised
+extensively by the integration test suite.
+
+---
+
 ## Test System (`test/`)
 
 The `test` directory functions as an **integration and behavioral specification suite**, not unit tests.
@@ -160,6 +184,9 @@ Validates:
 6. Runtime-loaded modules over HTTP (microfrontend-style)
 
 Non-JS imports (HTML, CSS, images) are intentionally imported **for side effects**, to validate correct asset emission and runtime behavior.
+
+These tests act as executable specifications for NGAPACK's runtime semantics,
+including namespace-based isolation and remote module loading behavior.
 
 ---
 

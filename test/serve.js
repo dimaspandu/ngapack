@@ -1,8 +1,13 @@
 /**
  * Simple static file server for local testing.
  *
- * This server exists only for development and manual verification.
- * It is intentionally decoupled from the bundler implementation.
+ * This server exists solely for development and manual verification.
+ * It is intentionally minimal and decoupled from ngapack internals.
+ *
+ * Features:
+ * - Serves static files from a given directory
+ * - Supports basic content-type mapping
+ * - Enables CORS for cross-port dynamic imports
  */
 
 import http from "node:http";
@@ -19,10 +24,10 @@ const __dirname = path.dirname(__filename);
 /**
  * Create a basic static HTTP server.
  *
- * rootDir:
+ * @param {string} rootDir
  *   Directory to be served as the web root.
  *
- * port:
+ * @param {number} port
  *   Local port to listen on.
  */
 function createStaticServer(rootDir, port) {
@@ -49,7 +54,13 @@ function createStaticServer(rootDir, port) {
       };
 
       res.writeHead(200, {
-        "Content-Type": typeMap[ext] || "text/plain",
+        "Content-Type": typeMap[ext] || "application/octet-stream",
+
+        /**
+         * CORS is intentionally enabled.
+         * This allows dynamic imports across different local ports,
+         * which is required to simulate microfrontend loading.
+         */
         "Access-Control-Allow-Origin": "*"
       });
 
@@ -64,6 +75,12 @@ function createStaticServer(rootDir, port) {
 }
 
 /**
- * Start the development server for bundled output.
+ * ---------------------------------------------------------
+ * Development servers
+ * ---------------------------------------------------------
+ *
+ * 2121 → main application bundle
+ * 2222 → simulated remote microfrontend
  */
 createStaticServer(path.join(__dirname, "public"), 2121);
+createStaticServer(path.join(__dirname, "public_microfrontend"), 2222);

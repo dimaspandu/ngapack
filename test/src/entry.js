@@ -180,11 +180,15 @@ async function runAllTests() {
 
   /**
    * 7. Remote microfrontend module test.
+   * 
+   * The `namespace` option ensures that this remote bundle
+   * is resolved within its own isolated module scope,
+   * even though it is loaded dynamically over HTTP.
    */
   try {
     // This remote module is intentionally external and may be unavailable.
     const somewhere = await import(
-      "https://djsmicrofrontends.netlify.app/resources/somewhere.js",
+      "http://localhost:2222/message.js",
       { namespace: "MicroFrontend" }
     );
 

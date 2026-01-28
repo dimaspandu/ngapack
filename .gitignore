@@ -5,4 +5,5 @@
 # Both directories contain generated artifacts and should not be
 # tracked in version control.
 test/public/
+test/public_microfrontend/
 test/dist/

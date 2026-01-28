@@ -4,6 +4,50 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.2.0] - 2026-01-28
+
+### Added
+- Formalize **microfrontend-style runtime loading** as a first-class
+  integration scenario.
+- Document **HTTP-based remote module loading** as a supported and
+  intentional runtime behavior.
+- Introduce explicit documentation for **bundle-level namespaces**
+  as a module identity and isolation mechanism.
+- Promote the integration test suite as **executable runtime specifications**.
+
+### Changed
+- Reframe the test system from example-based testing into
+  **behavioral and semantic verification**.
+- Clarify the relationship between:
+  - independently built bundles
+  - runtime module resolution
+  - namespace-based isolation
+- Refine test runner and development server roles to reflect
+  their purpose in validating runtime semantics rather than tooling output.
+
+### Improved
+- Improve conceptual alignment between:
+  - analyzer responsibilities
+  - bundler orchestration
+  - runtime execution model
+  - microfrontend loading behavior
+- Improve documentation clarity around dynamic imports, remote modules,
+  and isolated bundle graphs.
+- Strengthen project positioning as a runtime-oriented bundler experiment.
+
+### Docs
+- Add dedicated documentation covering:
+  - microfrontend-style loading
+  - namespace isolation semantics
+  - executable test specifications
+- Improve README structure and wording without altering runtime behavior.
+
+### Internal
+- No changes to bundling or runtime logic.
+- This release focuses on **design clarity, documentation, and specification fidelity**.
+
+---
+
 ## [1.1.0] - 2026-01-26
 
 ### Added
