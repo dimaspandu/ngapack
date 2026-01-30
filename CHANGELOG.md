@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.2.1] - 2026-01-30
+
+### Fixed
+- Prevent bundler crash when encountering **dynamic imports with non-literal specifiers**
+  (e.g. `import(variable)`).
+- Safely skip unresolved dynamic dependencies whose `module` field is `null`
+  during dependency graph construction.
+- Ensure non-statically-resolvable dynamic imports do not participate in
+  path resolution, graph expansion, or runtime module mapping.
+
+### Internal
+- Add explicit guard logic in `createGraph()` to defensively handle
+  analyzer metadata that cannot be resolved at build time.
+- Improve graph construction robustness without altering bundling
+  or runtime semantics.
+
+---
+
 ## [1.2.0] - 2026-01-28
 
 ### Added

@@ -242,6 +242,24 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
       const relativePath = dependency.module;
 
       /**
+       * Case 0: Dynamic import with non-literal argument.
+       * Example: import(finalPath)
+       *
+       * Such dependencies cannot be statically resolved and must be ignored.
+       * They are expected to be handled at runtime.
+       */
+      if (relativePath == null) {
+        logger.warn(
+          "[GRAPH] Skipping unresolved dynamic import (non-literal)",
+          {
+            importer: node.filename,
+            type: dependency.type
+          }
+        );
+        continue;
+      }
+
+      /**
        * Case 1: HTTP / HTTPS imports.
        * These modules are not bundled and are resolved at runtime.
        */
