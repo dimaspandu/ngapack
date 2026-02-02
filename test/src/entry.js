@@ -31,6 +31,12 @@ import sheetToCanonicalObject from "./sheetToCanonicalObject.js";
 import Unnecessary from "./internal/unnecessary.js";
 
 /**
+ * Shared module imported statically by the entry.
+ * (e.g. used directly here)
+ */
+import sharedMessage from "./shared/message.js";
+
+/**
  * Attach the entry CSS module to the document.
  *
  * This call verifies that:
@@ -206,6 +212,50 @@ async function runAllTests() {
       true
     );
   }
+
+  /**
+   * 8. Shared dependency duplication test.
+   *
+   * This test verifies the bundler invariant introduced in v1.2.2:
+   *
+   * - A module that is imported statically by the entry bundle
+   *   AND dynamically by multiple separated bundles
+   *   must remain available in all contexts.
+   *
+   * This ensures:
+   * - Dynamic bundles do NOT "steal" shared dependencies
+   * - Entry bundle remains fully self-sufficient
+   * - Duplicate module definitions across bundles are safe
+   *   due to runtime execution caching
+   */
+
+  runTest(
+    "Shared Dependency (Entry Context)",
+    sharedMessage(),
+    "Shared dependency is alive"
+  );
+
+  /**
+   * The same shared module is also imported dynamically
+   * through two different separated bundles.
+   *
+   * Each dynamic bundle contains its own copy of the dependency,
+   * but runtime execution must resolve to a valid module instance.
+   */
+  const sharedA = await import("./dynamic/sharedA.js");
+  const sharedB = await import("./dynamic/sharedB.js");
+
+  runTest(
+    "Shared Dependency (Dynamic Bundle A)",
+    sharedA.default(),
+    "Shared dependency is alive"
+  );
+
+  runTest(
+    "Shared Dependency (Dynamic Bundle B)",
+    sharedB.default(),
+    "Shared dependency is alive"
+  );
 }
 
 /**

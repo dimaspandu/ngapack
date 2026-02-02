@@ -4,6 +4,42 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.2.2] - 2026-02-02
+
+### Fixed
+- Fix missing module errors when the same dependency is referenced by both
+  static imports in the entry bundle and dynamic imports in separated bundles.
+- Ensure dynamically separated bundles no longer “steal” shared dependencies
+  from the entry bundle during bundle assignment.
+- Prevent runtime `Module not found` errors caused by exclusive bundle ownership
+  of shared modules.
+- Ensure shared modules remain accessible from both entry and dynamic bundles
+  when duplicated across outputs.
+
+### Changed
+- Revise `createBundle()` strategy to allow the same module to exist
+  in multiple bundles when required.
+- Entry bundle now always contains all non-separated (static) modules,
+  guaranteeing it is fully self-sufficient.
+- Each dynamic bundle now includes a full copy of its dependency subtree,
+  even if those modules already exist in the entry bundle.
+
+### Design Notes
+- This release intentionally trades bundle size for correctness and determinism.
+- Module deduplication is handled at runtime execution level, not during bundling.
+- Cross-bundle dependency resolution is explicitly avoided to keep the runtime
+  synchronous and stable.
+
+### Internal
+- Remove the assumption that a module can belong to only one bundle.
+- Reframe bundle ownership as a per-bundle inclusion decision rather than
+  a global module property.
+- Align bundler behavior with documented runtime invariants regarding
+  module registration and execution caching.
+- Add integration coverage for shared dependencies duplicated across bundles.
+
+---
+
 ## [1.2.1] - 2026-01-30
 
 ### Fixed
