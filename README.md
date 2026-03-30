@@ -170,6 +170,38 @@ The `test` directory functions as an **integration and behavioral specification 
 
 ---
 
+## Test System Details
+
+The test flow is designed to validate ngapack end-to-end in a browser-like runtime.
+
+### Execution flow
+
+1. `test/index.js` runs the bundler twice.
+2. Outputs are written into `test/public` (main app) and `test/public_microfrontend` (simulated remote bundle).
+3. `test/serve.js` starts two static servers with CORS enabled.
+4. Opening `http://localhost:2121` executes `test/src/entry.js`, which runs runtime-level specs.
+
+### What each file does
+
+* `test/index.js` builds both bundles and then starts the dev servers.
+* `test/serve.js` is a minimal static server. It exists only for manual runtime verification.
+* `test/src/entry.js` imports assets, runs dynamic imports, and validates runtime behavior.
+* `test/src/sheetToCanonicalObject.js` defines the canonical CSS normalization used for assertions.
+
+### Scenarios covered by `test/src/entry.js`
+
+1. Static ES module imports
+2. Dynamic JavaScript imports
+3. Dynamic JSON modules
+4. Dynamic CSS modules (with namespace isolation)
+5. Multiple dynamic bundles sharing internal dependencies
+6. Remote microfrontend module loading over HTTP
+7. Asset-only imports (HTML, CSS, images) for emission verification
+
+These are meant to act as executable specifications of ngapack’s runtime semantics.
+
+---
+
 ### `test/src/entry.js`
 
 Acts as the canonical integration entry point.
@@ -217,6 +249,69 @@ Features:
 * Avoids external dependencies
 
 This server exists purely for demonstration and debugging purposes.
+
+---
+
+## How It Works (Flow)
+
+At a high level, NGAPACK runs in four explicit phases:
+
+1. **Analyze**: `bundler/analyzer.js` parses entry modules and extracts dependency metadata (static, dynamic, and non-JS assets).
+2. **Graph**: `bundler/index.js` builds the dependency graph and assigns module identities within a namespace boundary.
+3. **Emit**: the bundler writes output chunks and asset files into the selected output directory.
+4. **Runtime**: `bundler/runtime/` helpers are injected so the browser can resolve modules, apply CSS/JSON modules, and load dynamic chunks at runtime.
+
+If you want to trace the full end-to-end behavior, use `test/index.js` - it is executable documentation that exercises all core behaviors.
+
+---
+
+## Quick Start (Manual Spec Run)
+
+Prerequisite: a recent Node.js version with native ESM support.
+
+Run the integration spec and start the dev servers:
+
+```bash
+node test/index.js
+```
+
+Then open:
+
+* `http://localhost:2121` - main bundle
+* `http://localhost:2222` - simulated remote microfrontend bundle
+
+The console output of `test/index.js` should describe what was bundled and where outputs were emitted.
+
+---
+
+## Dev Serve (No Bundle)
+
+If you want to inspect raw `test/src` behavior without bundling, use the dev server.
+This avoids npm and external dependencies entirely.
+
+Run:
+
+```bash
+node test/serve-dev.js
+```
+
+Then open:
+
+* `http://localhost:2131` - raw `test/src` served directly
+
+Notes:
+
+* Asset-only imports are not exercised in this mode.
+* Your browser must support native ESM and import assertions for JSON/CSS modules.
+* Live reload is focus-based: the page reloads only when the window/tab regains focus and files changed.
+* If you also want the microfrontend test to succeed, run the bundled server separately on port 2222.
+
+---
+
+## Dev Workflow Notes
+
+* The dev server exposes a lightweight change-check endpoint at `/__mtime` for focus-based reload.
+* Reload only happens when the browser regains focus, so edits in your IDE do not trigger extra background activity.
 
 ---
 

@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.2.3] - 2026-03-30
+
+### Added
+- Add dev-only static server (`test/serve-dev.js`) to serve raw `test/src` without bundling.
+- Add dev HTML entry (`test/src/index.dev.html`) and dev JS entry (`test/src/entry.dev.js`).
+- Add lightweight on-focus reload using a change-check endpoint.
+
+### Changed
+- Expand README with execution flow, test system details, and dev workflow notes.
+
+### Internal
+- Expose `/__mtime` endpoint in the dev server for change detection.
+
+---
+
 ## [1.2.2] - 2026-02-02
 
 ### Fixed
