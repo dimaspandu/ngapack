@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.2.4] - 2026-04-26
+
+### Internal
+- Update analyzer to version 1.2.1, including improvements to transpileExportTokensToCJS and removal of old transpileImportTokensToCJS versions.
+
+---
+
 ## [1.2.3] - 2026-03-30
 
 ### Added
