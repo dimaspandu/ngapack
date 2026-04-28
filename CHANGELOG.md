@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.2.6] - 2026-04-28
+
+### Changed
+- Polish the `boilerplate` example with clearer naming, more consistent formatting,
+  and more descriptive English comments across the browser entry files and Node.js runners.
+- Refine the boilerplate HTML and global styles for cleaner structure and baseline layout consistency.
+
+### Internal
+- Standardize `node:` imports and helper naming in boilerplate runner scripts for better maintainability.
+- Ignore every `dist` directory anywhere in the repository through the root `.gitignore`.
+
+---
+
 ## [1.2.5] - 2026-04-26
 
 ### Internal

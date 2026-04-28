@@ -7,3 +7,8 @@
 test/public/
 test/public_microfrontend/
 test/dist/
+
+# Build output directories
+#
+# Ignore every directory named "dist" anywhere in the repository.
+**/dist/
