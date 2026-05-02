@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+# [1.2.2] - 2026-05-02
+
+## Added
+
+- Test cases for export default async function (named and anonymous) in convertESMToCJSWithMeta module.
+
+---
+
 # [1.2.1] - 2026-04-26
 
 ## Added

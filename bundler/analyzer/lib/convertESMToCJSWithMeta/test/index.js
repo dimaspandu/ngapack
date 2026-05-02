@@ -467,6 +467,24 @@ runTest(
   }
 );
 
+runTest(
+  "Export default async function with name",
+  convertESMToCJSWithMeta(`export default async function fetchData() {}`),
+  {
+    code: `async function fetchData(){}exports.default=fetchData;`,
+    meta: []
+  }
+);
+
+runTest(
+  "Export default async function anonymous",
+  convertESMToCJSWithMeta(`export default async function () {}`),
+  {
+    code: `exports.default=async function(){};`,
+    meta: []
+  }
+);
+
 /* ============================================================
    4. RE-EXPORT NAMESPACE
    ============================================================ */

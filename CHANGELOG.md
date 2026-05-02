@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.2.7] - 2026-05-02
+
+### Added
+- Add boilerplate example demonstrating ngapack usage with polished structure and consistent naming.
+
+### Internal
+- Update analyzer to version 1.2.2, including test cases for export default async function (named and anonymous) in convertESMToCJSWithMeta module.
+
+---
+
 ## [1.2.6] - 2026-04-28
 
 ### Changed
