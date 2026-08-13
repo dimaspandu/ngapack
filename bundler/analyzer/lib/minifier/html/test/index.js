@@ -67,7 +67,41 @@ runTest(
       <b>World</b>
     </p>
   `),
-  `<p>Hello<b>World</b></p>`
+  `<p>Hello <b>World</b></p>`
+);
+
+runTest(
+  "Minify HTML - multiline text nodes collapse to single space",
+  minifyHTML(`
+    <p class="hero__description">
+      Website error, web app issues, database broken,
+      or sudden production down? We help find the root cause
+      and fix it.
+    </p>
+  `),
+  `<p class="hero__description">Website error, web app issues, database broken, or sudden production down? We help find the root cause and fix it.</p>`
+);
+
+runTest(
+  "Minify HTML - inline element between text nodes",
+  minifyHTML(`
+    <p class="hero__note">
+      No need to know what the problem is.
+      <strong>That's our part.</strong>
+    </p>
+  `),
+  `<p class="hero__note">No need to know what the problem is. <strong>That's our part.</strong></p>`
+);
+
+runTest(
+  "Minify HTML - inline element followed by text",
+  minifyHTML(`
+    <p>
+      <span class="terminal__success">✓</span>
+      DNS
+    </p>
+  `),
+  `<p><span class="terminal__success">✓</span> DNS</p>`
 );
 
 /**

@@ -2,7 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
-# [1.2.4] - 2026-08-13
+## [1.2.5] - 2026-08-13
+
+## Fixed
+
+- Fixed HTML minifier to collapse newlines between text nodes and inline elements into a single space, matching standard HTML whitespace behavior.
+- Removed unwanted leading/trailing spaces in minified output for multiline text content.
+
+## Added
+
+- Added regression tests for multiline text node collapsing in HTML minifier:
+  - `Minify HTML - multiline text nodes collapse to single space`
+  - `Minify HTML - inline element between text nodes`
+  - `Minify HTML - inline element followed by text`
+
+---
+
+## [1.2.4] - 2026-08-13
 
 ## Fixed
 
@@ -15,7 +31,7 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-# [1.2.3] - 2026-08-13
+## [1.2.3] - 2026-08-13
 
 ## Fixed
 
@@ -30,7 +46,7 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-# [1.2.2] - 2026-05-02
+## [1.2.2] - 2026-05-02
 
 ## Added
 
@@ -38,7 +54,7 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-# [1.2.1] - 2026-04-26
+## [1.2.1] - 2026-04-26
 
 ## Added
 
@@ -46,7 +62,7 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-# [1.2.0] - 2026-01-25
+## [1.2.0] - 2026-01-25
 
 ## Added
 
@@ -72,7 +88,7 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-# [1.1.0] - 2026-01-23
+## [1.1.0] - 2026-01-23
 
 ## Added
 
@@ -100,7 +116,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-# [1.0.0] - 2026-01-12
+## [1.0.0] - 2026-01-12
 
 ## Added
 
