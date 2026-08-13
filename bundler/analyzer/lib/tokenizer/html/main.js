@@ -185,6 +185,11 @@ export default function htmlTokenizer(source, opts = {}) {
         continue;
       }
 
+      if (peek() === "\n" || peek() === "\r") {
+        advance();
+        continue;
+      }
+
       const sAttr = snap();
       let name = "";
       while (/[^\s=>]/.test(peek())) {

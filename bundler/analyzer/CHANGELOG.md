@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+# [1.2.4] - 2026-08-13
+
+## Fixed
+
+- Fixed incorrect semicolon insertion for dynamic `import()` expressions nested inside other expressions (e.g., arrow function bodies, function arguments).
+- Prevented duplicate semicolons when dynamic import is already followed by a semicolon.
+
+## Added
+
+- Added test coverage for dynamic import inside arrow function call (with and without parenthesized parameter) across tokenizer, `transpileImportTokensToCJS`, and `convertESMToCJSWithMeta`.
+
+---
+
+# [1.2.3] - 2026-08-13
+
+## Fixed
+
+- Fixed infinite loop in HTML tokenizer when parsing multiline tags with newline characters inside tag attributes.
+- Fixed trailing whitespace before `>` in minified HTML output for tags with attributes.
+- Renamed ambiguous test case to `Minify HTML - multiline tag with attributes` in HTML minifier test suite.
+
+## Added
+
+- Added test coverage for multiline HTML tags with attributes in both tokenizer and minifier.
+- Added regression test ensuring no trailing space before closing tag bracket after minification.
+
+---
+
 # [1.2.2] - 2026-05-02
 
 ## Added

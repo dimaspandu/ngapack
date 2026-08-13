@@ -125,6 +125,74 @@ runTest(
     { type: "tag_close", value: "/" },
     { type: "tag_name", value: "svg" },
     { type: "tag_end", value: ">" }
+  ]
+);
+
+runTest(
+  "HTML: multiline tag with attributes",
+  htmlTokenizer(`
+    <button
+      class="menu-toggle"
+      type="button"
+    >
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  `).map(t => ({
+    type: t.type,
+    value: t.value
+  })),
+  [
+    { type: "newline", value: "\n" },
+    { type: "whitespace", value: "    " },
+    { type: "tag_open", value: "<" },
+    { type: "tag_name", value: "button" },
+    { type: "whitespace", value: "      " },
+    { type: "attr_name", value: "class" },
+    { type: "attr_equal", value: "=" },
+    { type: "attr_value", value: "\"menu-toggle\"" },
+    { type: "whitespace", value: "      " },
+    { type: "attr_name", value: "type" },
+    { type: "attr_equal", value: "=" },
+    { type: "attr_value", value: "\"button\"" },
+    { type: "whitespace", value: "    " },
+    { type: "tag_end", value: ">" },
+    { type: "newline", value: "\n" },
+    { type: "whitespace", value: "      " },
+    { type: "tag_open", value: "<" },
+    { type: "tag_name", value: "span" },
+    { type: "tag_end", value: ">" },
+    { type: "tag_open", value: "<" },
+    { type: "tag_close", value: "/" },
+    { type: "tag_name", value: "span" },
+    { type: "tag_end", value: ">" },
+    { type: "newline", value: "\n" },
+    { type: "whitespace", value: "      " },
+    { type: "tag_open", value: "<" },
+    { type: "tag_name", value: "span" },
+    { type: "tag_end", value: ">" },
+    { type: "tag_open", value: "<" },
+    { type: "tag_close", value: "/" },
+    { type: "tag_name", value: "span" },
+    { type: "tag_end", value: ">" },
+    { type: "newline", value: "\n" },
+    { type: "whitespace", value: "      " },
+    { type: "tag_open", value: "<" },
+    { type: "tag_name", value: "span" },
+    { type: "tag_end", value: ">" },
+    { type: "tag_open", value: "<" },
+    { type: "tag_close", value: "/" },
+    { type: "tag_name", value: "span" },
+    { type: "tag_end", value: ">" },
+    { type: "newline", value: "\n" },
+    { type: "whitespace", value: "    " },
+    { type: "tag_open", value: "<" },
+    { type: "tag_close", value: "/" },
+    { type: "tag_name", value: "button" },
+    { type: "tag_end", value: ">" },
+    { type: "newline", value: "\n" },
+    { type: "whitespace", value: "  " }
   ],
   true
 );

@@ -70,12 +70,15 @@ export default function minifyHTML(code) {
     if (t.type === "whitespace") {
       // Inside tag → normalize attribute spacing
       if (insideTag) {
-        if (
-          prev &&
-          (prev.type === "tag_name" || prev.type === "attr_value")
-        ) {
-          cleaned.push({ ...t, value: " " });
-        }
+      if (
+        prev &&
+        (prev.type === "tag_name" || prev.type === "attr_value") &&
+        next &&
+        next.type !== "tag_end" &&
+        next.type !== "tag_self_close"
+      ) {
+        cleaned.push({ ...t, value: " " });
+      }
         continue;
       }
 

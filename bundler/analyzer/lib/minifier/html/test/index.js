@@ -143,6 +143,21 @@ runTest(
 runTest(
   "Minify HTML - only whitespace",
   minifyHTML(`   \n   `),
-  ``,
+  ``
+);
+
+runTest(
+  "Minify HTML - multiline tag with attributes",
+  minifyHTML(`
+    <button
+      class="menu-toggle"
+      type="button"
+    >
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  `),
+  `<button class="menu-toggle" type="button"><span></span><span></span><span></span></button>`,
   true
 );

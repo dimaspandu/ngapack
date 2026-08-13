@@ -346,6 +346,58 @@ runTest(
     { type: "template", value: ".js`" },
     { type: "punctuator", value: ")" },
     { type: "punctuator", value: ";" }
+  ]
+);
+
+runTest(
+  "Dynamic import in arrow function",
+  tokenizer(`foo("/", ctx => import("./assets/js/baz.js"));`).map(t => ({
+    type: t.type,
+    value: t.value
+  })),
+  [
+    { type: "identifier", value: "foo" },
+    { type: "punctuator", value: "(" },
+    { type: "string", value: "\"/\"" },
+    { type: "punctuator", value: "," },
+    { type: "whitespace", value: " " },
+    { type: "identifier", value: "ctx" },
+    { type: "whitespace", value: " " },
+    { type: "punctuator", value: "=>" },
+    { type: "whitespace", value: " " },
+    { type: "keyword", value: "import" },
+    { type: "punctuator", value: "(" },
+    { type: "string", value: "\"./assets/js/baz.js\"" },
+    { type: "punctuator", value: ")" },
+    { type: "punctuator", value: ")" },
+    { type: "punctuator", value: ";" }
+  ]
+);
+
+runTest(
+  "Dynamic import in arrow function with parenthesized parameter",
+  tokenizer(`foo("/", (ctx) => import("./assets/js/bar.js"));`).map(t => ({
+    type: t.type,
+    value: t.value
+  })),
+  [
+    { type: "identifier", value: "foo" },
+    { type: "punctuator", value: "(" },
+    { type: "string", value: "\"/\"" },
+    { type: "punctuator", value: "," },
+    { type: "whitespace", value: " " },
+    { type: "punctuator", value: "(" },
+    { type: "identifier", value: "ctx" },
+    { type: "punctuator", value: ")" },
+    { type: "whitespace", value: " " },
+    { type: "punctuator", value: "=>" },
+    { type: "whitespace", value: " " },
+    { type: "keyword", value: "import" },
+    { type: "punctuator", value: "(" },
+    { type: "string", value: "\"./assets/js/bar.js\"" },
+    { type: "punctuator", value: ")" },
+    { type: "punctuator", value: ")" },
+    { type: "punctuator", value: ";" }
   ],
   true
 );

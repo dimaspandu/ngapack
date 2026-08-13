@@ -376,6 +376,40 @@ runTest(
   }
 );
 
+runTest(
+  "Dynamic import inside arrow function call",
+  convertESMToCJSWithMeta(`foo("/", ctx => import("./assets/js/baz.js"));`),
+  {
+    code: `foo("/",ctx=>requireByHttp("./assets/js/baz.js"));`,
+    meta: [
+      {
+        module: "./assets/js/baz.js",
+        type: "dynamic",
+        assertions: null,
+        literal: true,
+        reason: null
+      }
+    ]
+  }
+);
+
+runTest(
+  "Dynamic import inside arrow function call (parenthesized param)",
+  convertESMToCJSWithMeta(`foo("/", (ctx) => import("./assets/js/bar.js"));`),
+  {
+    code: `foo("/",(ctx)=>requireByHttp("./assets/js/bar.js"));`,
+    meta: [
+      {
+        module: "./assets/js/bar.js",
+        type: "dynamic",
+        assertions: null,
+        literal: true,
+        reason: null
+      }
+    ]
+  }
+);
+
 /* ============================================================
    3. RE-EXPORTS
    ============================================================ */

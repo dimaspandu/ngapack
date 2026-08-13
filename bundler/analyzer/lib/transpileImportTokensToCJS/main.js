@@ -507,8 +507,21 @@ export default function transpileImportTokensToCJS(
       // Find end of dynamic import expression including nested parentheses.
       const endIndex = getDynamicImportEndIndex(tokens, idx);
 
-      // Ensure trailing semicolon.
-      if (!isSemi(tokens[endIndex])) {
+      // Ensure trailing semicolon only when this is a standalone expression
+      // statement. Skip insertion when the import is nested inside another
+      // expression (e.g. arrow body, function argument) or already followed
+      // by a semicolon.
+      const curToken = tokens[endIndex];
+      const nextToken = tokens[endIndex + 1];
+      const isNested =
+        (curToken && curToken.value === ";") ||
+        (nextToken &&
+          (nextToken.value === ";" ||
+           nextToken.value === ")" ||
+           nextToken.value === "]" ||
+           nextToken.value === "}"));
+
+      if (!isNested) {
         tokens.splice(endIndex + 1, 0, { type: "punctuator", value: ";" });
       }
     }
