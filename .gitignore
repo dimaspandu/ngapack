@@ -8,6 +8,9 @@ test/public/
 test/public_microfrontend/
 test/dist/
 
+# Demo output directories
+demo/public/
+
 # Build output directories
 #
 # Ignore every directory named "dist" anywhere in the repository.

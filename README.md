@@ -32,6 +32,18 @@ ngapack/
 │  ├─ helper.js
 │  └─ index.js             # Bundler entry point
 │
+├─ demo/                   # Minimal end-to-end bundling demo
+│  ├─ src/                 # Source application
+│  │  ├─ entry.js          # Entry point
+│  │  ├─ greeting.js       # Plain ES module
+│  │  ├─ style.module.css  # CSS module
+│  │  ├─ global.css        # Plain CSS asset
+│  │  └─ index.html        # HTML asset
+│  ├─ public/              # Generated bundle output
+│  ├─ bundle.js            # Bundler runner
+│  ├─ serve.js             # Static server runner
+│  └─ README.md
+│
 ├─ test/                   # Integration & spec-style tests
 │  ├─ public/              # Static assets served by dev server
 │  ├─ src/                 # Test application source
@@ -55,7 +67,8 @@ ngapack/
 │  │  ├─ sheetToCanonicalObject.js
 │  │  └─ tester.js
 │  ├─ index.js             # Test runner
-│  └─ serve.js             # Minimal dev HTTP server
+│  ├─ serve.js             # Minimal dev HTTP server
+│  └─ README.md
 │
 ├─ .gitignore
 ├─ CHANGELOG.md
