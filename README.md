@@ -88,6 +88,7 @@ Capabilities:
 * Extracts dependency metadata
 * Distinguishes static vs dynamic imports
 * Detects non-JS assets (CSS, JSON, HTML, images)
+* Transpiles JSX to JavaScript via the `transpileJSX` module
 
 Design constraints:
 

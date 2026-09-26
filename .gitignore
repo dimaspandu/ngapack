@@ -12,3 +12,10 @@ test/dist/
 #
 # Ignore every directory named "dist" anywhere in the repository.
 **/dist/
+
+# Agent model directories
+#
+# Local agent state and configuration — keep out of version control.
+.kilo/
+.kilocode/
+.opencode/

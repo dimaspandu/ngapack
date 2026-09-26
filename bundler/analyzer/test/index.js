@@ -13,3 +13,4 @@ await import("../lib/extractModules/test/index.js");
 await import("../lib/transpileExportTokensToCJS/test/index.js");
 await import("../lib/transpileImportTokensToCJS/test/index.js");
 await import("../lib/convertESMToCJSWithMeta/test/index.js");
+await import("../lib/transpileJSX/test/index.js");

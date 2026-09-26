@@ -50,6 +50,7 @@ js-analyzer/
 │   ├── extractModules/
 │   ├── transpileImportTokensToCJS/
 │   ├── transpileExportTokensToCJS/
+│   ├── transpileJSX/
 │   └── convertESMToCJSWithMeta/
 │
 ├── test/
@@ -73,6 +74,7 @@ The project uses a **single entry test runner** that dynamically imports all tes
 * minifier (JS, CSS, HTML, JSON)
 * extractModules
 * transpilers (import/export)
+* transpileJSX (JSX → JS)
 * ESM → CJS orchestration
 
 This guarantees:
@@ -208,7 +210,43 @@ This is useful for tooling, documentation generators, and dependency analysis.
 
 ---
 
-# 11. End-to-End Flow Summary
+# 12. transpileJSX (lib/transpileJSX/)
+
+A minimal, string-based JSX-to-JS compiler. It scans JavaScript source for JSX syntax and transforms it into factory call expressions:
+
+```jsx
+// Input (JSX)
+const x = <div className="foo"><h1>{title}</h1>Hello</div>;
+
+// Output (factory: "d")
+const x = d("div", { "className": "foo" }, d("h1", null, title), "Hello");
+```
+
+**Factory name** is configurable in priority order:
+1. `compileJSX(source, factory)` parameter — e.g. `compileJSX(src, "h")`
+2. `/** @jsx name */` pragma at the top of the source
+3. Defaults to `"d"`
+
+**Supported features:**
+- Elements, self-closing tags, nested elements
+- Fragments: `<>...</>` → `factory.fragment(...)`
+- Attributes: string values, expression containers, boolean, spread
+- Expression children: `{variable}`, template literals
+- JSX embedded inside regular JavaScript
+
+```
+Source Code (JS + JSX)
+   ↓
+compileJSX(source, factory?)
+   ↓
+JavaScript (factory call expressions)
+   ↓
+Browser runtime / bundler
+```
+
+---
+
+# 13. End-to-End Flow Summary
 
 ```
 Source Code
@@ -230,7 +268,7 @@ Final Output
 
 ---
 
-# 12. Use Cases
+# 14. Use Cases
 
 JS Analyzer is suitable for:
 
@@ -238,12 +276,13 @@ JS Analyzer is suitable for:
 * static dependency analysis
 * experimental transpilers
 * syntax normalization
+* JSX → JS compilation
 * prototyping code rewriting tools
 
 Each component can be used independently or as part of the full pipeline.
 
 ---
 
-# 13. License
+# 15. License
 
 MIT License.
