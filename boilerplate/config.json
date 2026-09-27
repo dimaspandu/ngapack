@@ -1,7 +1,0 @@
-{
-  "entry": "src/pre-index.js",
-  "devDir": "src",
-  "outputDir": "dist",
-  "uglified": true,
-  "port": 4500
-}
