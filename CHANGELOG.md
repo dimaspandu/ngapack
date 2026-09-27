@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.3.2] - 2026-09-27
+
+### Added
+- Custom JSX factory name support via import assertion.
+  - `import x from "./foo.js" with { type: "jsx", factory: "elementBuilder" };`
+  - The `factory` key overrides the default `"d"` and any `/** @jsx */` pragma in the target file.
+  - Factory resolution order: assertion `factory` > `@jsx` pragma > default `"d"`.
+
+### Changed
+- `createNode()` in `src/index.js` now accepts a `jsxFactory` parameter (truthy string or `true`).
+- `createGraph()` extracts `factory` from `dependency.assertions` and forwards it to child nodes.
+
+---
+
 ## [1.3.1] - 2026-09-27
 
 ### Added

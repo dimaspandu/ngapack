@@ -114,15 +114,19 @@ async function copyAssetToOutput({
 }
 
 /**
- * createNode(filename, separated, isJSX)
- * -------------------------------------
+ * createNode(filename, separated, jsxFactory)
+ * ------------------------------------------
  * Reads and transforms a source file into a dependency graph node.
  * Each node represents a single module.
  *
- * When isJSX is true, the file is pre-processed by compileJSX()
+ * When jsxFactory is truthy, the file is pre-processed by compileJSX()
  * before ESM→CJS conversion, allowing JSX syntax in plain .js files.
+ *
+ *   - jsxFactory === true  → use default factory "d"
+ *   - jsxFactory === "h"  → use factory "h"
+ *   - jsxFactory === false → skip JSX processing
  */
-function createNode(filename, separated = false, isJSX = false) {
+function createNode(filename, separated = false, jsxFactory = false) {
   logger.info(`[NODE] Processing file: ${filename}`);
 
   const rawCode = fs.readFileSync(filename, "utf-8");
@@ -134,18 +138,19 @@ function createNode(filename, separated = false, isJSX = false) {
    * Step 0: Optional JSX pre-processing.
    *
    * Triggered when the importer uses:
-   *   import x from "./foo.js" with { type: "jsx" };
+   *   import x from "./foo.js" with { type: "jsx", factory: "h" };
    *
    * compileJSX() resolves the factory name internally:
-   *   1. explicit parameter (not available here)
+   *   1. explicit parameter (jsxFactory) — highest priority
    *   2. an @jsx pragma comment in source
    *   3. default "d"
    */
   let processedCode = rawCode;
 
-  if (isJSX) {
-    logger.info("[NODE] Transpiling JSX");
-    processedCode = compileJSX(rawCode);
+  if (jsxFactory) {
+    const factory = jsxFactory === true ? undefined : jsxFactory;
+    logger.info(`[NODE] Transpiling JSX (factory: ${factory || "d"})`);
+    processedCode = compileJSX(rawCode, factory);
   }
 
   /**
@@ -314,11 +319,15 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
 
       /**
        * Detect JSX via import assertion:
-       *   import x from "./foo.js" with { type: "jsx" };
+       *   import x from "./foo.js" with { type: "jsx", factory: "h" };
+       *
+       * The optional `factory` key overrides the default "d" and any
+       * @jsx pragma comment in the target file.
        */
-      const isJSXAssertion =
+      const jsxFactory =
         dependency.assertions &&
-        dependency.assertions.type === "jsx";
+        dependency.assertions.type === "jsx" &&
+        (dependency.assertions.factory || true);
 
       if (isModule) {
         logger.info(`[GRAPH] Adding dependency module: ${absolutePath}`);
@@ -326,7 +335,7 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
         const childNode = createNode(
           absolutePath,
           dependency.type === "dynamic",
-          isJSXAssertion
+          jsxFactory
         );
 
         childNode.dependent = node.id;

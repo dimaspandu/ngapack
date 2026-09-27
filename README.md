@@ -283,10 +283,17 @@ NGAPACK can transpile JSX to JavaScript via the `transpileJSX` module. It is tri
 import renderer from "./dom.js" with { type: "jsx" };
 ```
 
-When the bundler encounters an import with `type: "jsx"`, it runs `compileJSX()` on the target file before ESM→CJS conversion. The factory name is resolved internally:
+The optional `factory` key overrides the default `"d"`:
 
-1. `/** @jsx name */` pragma at the top of the file
-2. Default `"d"`
+```js
+import renderer from "./dom.js" with { type: "jsx", factory: "elementBuilder" };
+```
+
+When the bundler encounters an import with `type: "jsx"`, it runs `compileJSX()` on the target file before ESM→CJS conversion. The factory name is resolved in this order:
+
+1. `factory` key in the import assertion (highest priority)
+2. `/** @jsx name */` pragma at the top of the target file
+3. Default `"d"`
 
 The factory must be available at runtime — typically defined in the application code itself.
 

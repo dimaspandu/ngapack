@@ -8,6 +8,7 @@ A minimal, self-contained demo showing how ngapack bundles a simple web applicat
 - CSS modules (`.module.css`)
 - Non-JS asset emission (`.css`, `.html`)
 - Browser runtime injection
+- JSX transpilation with a custom factory
 
 ## Project structure
 
@@ -16,6 +17,8 @@ demo/
 ├─ src/                 # Source application
 │  ├─ entry.js          # Entry point (consumes modules)
 │  ├─ greeting.js       # Plain ES module
+│  ├─ dom.js            # JSX component (transpiled)
+│  ├─ elementBuilder.js # Custom JSX factory
 │  ├─ style.module.css  # CSS module (consumed by JS)
 │  ├─ global.css        # Plain CSS asset
 │  └─ index.html        # HTML asset
@@ -57,12 +60,17 @@ await bundler({
 });
 ```
 
-The bundler:
+### JSX transpilation
 
-1. **Analyzes** `entry.js` and extracts its dependency graph.
-2. **Bundles** all reachable modules into a single output file.
-3. **Emits** non-JS assets (`global.css`, `index.html`) into `demo/public/`.
-4. **Injects** the ngapack runtime so the browser can resolve modules at runtime.
+`entry.js` imports `dom.js` with a JSX assertion and a custom factory:
+
+```js
+import renderer from "./dom.js" with { type: "jsx", factory: "elementBuilder" };
+```
+
+The bundler runs `compileJSX()` on `dom.js` before ESM→CJS conversion. The `factory` key overrides the default `"d"` and any `/** @jsx */` pragma in the target file.
+
+The factory implementation lives in `elementBuilder.js` and is imported normally by `dom.js`.
 
 ## Notes
 
