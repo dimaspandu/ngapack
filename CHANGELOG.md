@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.3.3] - 2026-09-27
+
+### Added
+- Automatic JSX transpilation for `.jsx` files.
+  - No import assertion required — any file with a `.jsx` extension is transpiled.
+  - Factory name resolved via `/** @jsx */` pragma, or defaults to `"d"`.
+
+### Changed
+- Refactor `demo/` to use a clearer structure:
+  - `factories/` — JSX factory implementations
+  - `components/` — JSX components (transpiled)
+  - `entry.js` — orchestrator only, no inline logic
+- `createNode()` in `src/index.js` now transpiles `.jsx` files automatically.
+- `createGraph()` forwards `true` for `.jsx` files, and the assertion `factory` value for `.js` files.
+
+---
+
 ## [1.3.2] - 2026-09-27
 
 ### Added

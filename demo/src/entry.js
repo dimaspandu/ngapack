@@ -5,10 +5,11 @@
  * - static ES module imports
  * - CSS modules
  * - non-JS assets (HTML, CSS)
+ * - JSX transpilation with a custom factory
  */
 
 import { greet } from "./greeting.js";
-import renderer from "./dom.js" with { type: "jsx", factory: "elementBuilder" };
+import Card from "./components/Card.jsx" with { type: "jsx", factory: "elementBuilder" };
 import styles from "./style.module.css" with { type: "css" };
 import "./index.html";
 import "./global.css";
@@ -23,6 +24,10 @@ if (typeof document !== "undefined") {
 const app = document.getElementById("app");
 if (app) {
   app.innerHTML = `<h1>${greet("NGAPACK")}</h1>`;
+  app.appendChild(
+    Card({
+      title: "NGAPACK",
+      body: "Bundled with a custom JSX factory."
+    })
+  );
 }
-
-app.appendChild(renderer(greet("NGAPACK")));

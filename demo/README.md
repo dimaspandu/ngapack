@@ -15,10 +15,12 @@ A minimal, self-contained demo showing how ngapack bundles a simple web applicat
 ```
 demo/
 ├─ src/                 # Source application
-│  ├─ entry.js          # Entry point (consumes modules)
+│  ├─ entry.js          # Entry point (orchestrates)
 │  ├─ greeting.js       # Plain ES module
-│  ├─ dom.js            # JSX component (transpiled)
-│  ├─ elementBuilder.js # Custom JSX factory
+│  ├─ factories/        # JSX factory implementations
+│  │  └─ elementBuilder.js
+│  ├─ components/       # JSX components (transpiled)
+│  │  └─ Card.jsx
 │  ├─ style.module.css  # CSS module (consumed by JS)
 │  ├─ global.css        # Plain CSS asset
 │  └─ index.html        # HTML asset
@@ -62,15 +64,15 @@ await bundler({
 
 ### JSX transpilation
 
-`entry.js` imports `dom.js` with a JSX assertion and a custom factory:
+`entry.js` imports `Card.jsx` with a JSX assertion and a custom factory:
 
 ```js
-import renderer from "./dom.js" with { type: "jsx", factory: "elementBuilder" };
+import Card from "./components/Card.jsx" with { type: "jsx", factory: "elementBuilder" };
 ```
 
-The bundler runs `compileJSX()` on `dom.js` before ESM→CJS conversion. The `factory` key overrides the default `"d"` and any `/** @jsx */` pragma in the target file.
+The bundler runs `compileJSX()` on `Card.jsx` before ESM→CJS conversion. The `factory` key overrides the default `"d"` and any `/** @jsx */` pragma in the target file.
 
-The factory implementation lives in `elementBuilder.js` and is imported normally by `dom.js`.
+The factory implementation lives in `factories/elementBuilder.js` and is imported normally by `Card.jsx`.
 
 ## Notes
 

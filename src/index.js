@@ -119,12 +119,14 @@ async function copyAssetToOutput({
  * Reads and transforms a source file into a dependency graph node.
  * Each node represents a single module.
  *
- * When jsxFactory is truthy, the file is pre-processed by compileJSX()
- * before ESM→CJS conversion, allowing JSX syntax in plain .js files.
+ * JSX pre-processing is triggered in two ways:
+ *   1. File extension is ".jsx" — automatic, no assertion needed.
+ *   2. Import assertion: `import x from "./foo.js" with { type: "jsx", factory: "h" };`
  *
- *   - jsxFactory === true  → use default factory "d"
- *   - jsxFactory === "h"  → use factory "h"
- *   - jsxFactory === false → skip JSX processing
+ * When triggered, compileJSX() resolves the factory name internally:
+ *   1. explicit parameter (jsxFactory) — highest priority
+ *   2. an @jsx pragma comment in source
+ *   3. default "d"
  */
 function createNode(filename, separated = false, jsxFactory = false) {
   logger.info(`[NODE] Processing file: ${filename}`);
@@ -137,18 +139,20 @@ function createNode(filename, separated = false, jsxFactory = false) {
   /**
    * Step 0: Optional JSX pre-processing.
    *
-   * Triggered when the importer uses:
+   * .jsx files are transpiled automatically.
+   * .js files are transpiled only when the importer uses
    *   import x from "./foo.js" with { type: "jsx", factory: "h" };
-   *
-   * compileJSX() resolves the factory name internally:
-   *   1. explicit parameter (jsxFactory) — highest priority
-   *   2. an @jsx pragma comment in source
-   *   3. default "d"
    */
   let processedCode = rawCode;
 
-  if (jsxFactory) {
-    const factory = jsxFactory === true ? undefined : jsxFactory;
+  const isJSXExtension = ext === ".jsx";
+  const isJSXAssertion = jsxFactory;
+
+  if (isJSXExtension || isJSXAssertion) {
+    const factory = isJSXExtension
+      ? undefined
+      : (jsxFactory === true ? undefined : jsxFactory);
+
     logger.info(`[NODE] Transpiling JSX (factory: ${factory || "d"})`);
     processedCode = compileJSX(rawCode, factory);
   }
@@ -318,16 +322,22 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
         (isAssetExtension(ext) && isModuleAsset(absolutePath));
 
       /**
-       * Detect JSX via import assertion:
-       *   import x from "./foo.js" with { type: "jsx", factory: "h" };
+       * Detect JSX via file extension or import assertion:
+       *   - .jsx files are transpiled automatically
+       *   - .js files are transpiled only with:
+       *       import x from "./foo.js" with { type: "jsx", factory: "h" };
        *
        * The optional `factory` key overrides the default "d" and any
        * @jsx pragma comment in the target file.
        */
-      const jsxFactory =
-        dependency.assertions &&
-        dependency.assertions.type === "jsx" &&
-        (dependency.assertions.factory || true);
+      const isJSXExtension = ext === ".jsx";
+      const jsxFactory = isJSXExtension
+        ? true
+        : (
+          dependency.assertions &&
+          dependency.assertions.type === "jsx" &&
+          (dependency.assertions.factory || true)
+        );
 
       if (isModule) {
         logger.info(`[GRAPH] Adding dependency module: ${absolutePath}`);
