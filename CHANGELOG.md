@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.3.0] - 2026-09-27
+
+### Changed
+- Rename the core `bundler/` directory to `src/` for a clearer, more conventional project layout.
+  - All source files, the analyzer, helpers, and runtime are now under `src/`.
+  - Updated all internal import paths (`../bundler/` → `../src/`) in `test/index.js` and `demo/bundle.js`.
+  - Updated documentation references in `README.md` and `CHANGELOG.md`.
+
+### Added
+- New `src/README.md` documenting the core bundler implementation structure, subdirectories, and usage.
+
+### Internal
+- Add `demo/public/` to `.gitignore` to keep generated demo output out of version control.
+- Add agent model directories (`.kilo/`, `.kilocode/`, `.opencode/`) to the root `.gitignore`.
+
+---
+
 ## [1.2.9] - 2026-09-26
 
 ### Added
