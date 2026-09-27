@@ -9,6 +9,7 @@
 
 import { greet } from "./greeting.js";
 import styles from "./style.module.css" with { type: "css" };
+import "./index.html";
 import "./global.css";
 
 // Apply the CSS module to the document.
