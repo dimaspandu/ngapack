@@ -9,7 +9,7 @@
  */
 
 import { greet } from "./greeting.js";
-import Card from "./components/Card.jsx" with { type: "jsx", factory: "elementBuilder" };
+import Card from "./components/Card.js" with { type: "jsx", factory: "elementBuilder" };
 import styles from "./style.module.css" with { type: "css" };
 import "./index.html";
 import "./global.css";

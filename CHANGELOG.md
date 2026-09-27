@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.3.4] - 2026-09-27
+
+### Changed
+- Remove automatic `.jsx` transpilation.
+  - Bundler no longer treats `.jsx` files as modules by default.
+  - JSX transpilation is triggered only by import assertion:
+    `import x from "./foo.js" with { type: "jsx", factory: "h" };`
+  - This keeps behavior explicit and avoids surprising transpilation of files
+    that merely happen to have a `.jsx` extension.
+
+### Changed
+- Refactor `demo/` to use a clearer structure:
+  - `factories/` — JSX factory implementations
+  - `components/` — JSX components (transpiled via assertion)
+  - `entry.js` — orchestrator only, no inline logic
+- Rename `components/Card.jsx` → `components/Card.js` to demonstrate that
+  JSX transpilation works regardless of file extension.
+
+---
+
 ## [1.3.3] - 2026-09-27
 
 ### Added

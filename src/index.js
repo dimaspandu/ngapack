@@ -119,11 +119,10 @@ async function copyAssetToOutput({
  * Reads and transforms a source file into a dependency graph node.
  * Each node represents a single module.
  *
- * JSX pre-processing is triggered in two ways:
- *   1. File extension is ".jsx" — automatic, no assertion needed.
- *   2. Import assertion: `import x from "./foo.js" with { type: "jsx", factory: "h" };`
+ * JSX pre-processing is triggered only by import assertion:
+ *   import x from "./foo.js" with { type: "jsx", factory: "h" };
  *
- * When triggered, compileJSX() resolves the factory name internally:
+ * compileJSX() resolves the factory name internally:
  *   1. explicit parameter (jsxFactory) — highest priority
  *   2. an @jsx pragma comment in source
  *   3. default "d"
@@ -139,20 +138,13 @@ function createNode(filename, separated = false, jsxFactory = false) {
   /**
    * Step 0: Optional JSX pre-processing.
    *
-   * .jsx files are transpiled automatically.
-   * .js files are transpiled only when the importer uses
+   * Only triggered when the importer uses:
    *   import x from "./foo.js" with { type: "jsx", factory: "h" };
    */
   let processedCode = rawCode;
 
-  const isJSXExtension = ext === ".jsx";
-  const isJSXAssertion = jsxFactory;
-
-  if (isJSXExtension || isJSXAssertion) {
-    const factory = isJSXExtension
-      ? undefined
-      : (jsxFactory === true ? undefined : jsxFactory);
-
+  if (jsxFactory) {
+    const factory = jsxFactory === true ? undefined : jsxFactory;
     logger.info(`[NODE] Transpiling JSX (factory: ${factory || "d"})`);
     processedCode = compileJSX(rawCode, factory);
   }
@@ -307,37 +299,29 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
       }
 
 /**
-        * Case 2: Local file imports.
-        */
+       * Case 2: Local file imports.
+       */
       const absolutePath = normalizeId(
         path.join(currentDir, relativePath)
       );
 
       const ext = path.extname(absolutePath);
       const isJS = [".js", ".mjs"].includes(ext);
-      const isJSX = ext === ".jsx";
       const isModule =
         isJS ||
-        isJSX ||
         (isAssetExtension(ext) && isModuleAsset(absolutePath));
 
       /**
-       * Detect JSX via file extension or import assertion:
-       *   - .jsx files are transpiled automatically
-       *   - .js files are transpiled only with:
-       *       import x from "./foo.js" with { type: "jsx", factory: "h" };
+       * Detect JSX via import assertion only:
+       *   import x from "./foo.js" with { type: "jsx", factory: "h" };
        *
        * The optional `factory` key overrides the default "d" and any
        * @jsx pragma comment in the target file.
        */
-      const isJSXExtension = ext === ".jsx";
-      const jsxFactory = isJSXExtension
-        ? true
-        : (
-          dependency.assertions &&
-          dependency.assertions.type === "jsx" &&
-          (dependency.assertions.factory || true)
-        );
+      const jsxFactory =
+        dependency.assertions &&
+        dependency.assertions.type === "jsx" &&
+        (dependency.assertions.factory || true);
 
       if (isModule) {
         logger.info(`[GRAPH] Adding dependency module: ${absolutePath}`);

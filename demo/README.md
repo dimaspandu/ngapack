@@ -20,7 +20,7 @@ demo/
 │  ├─ factories/        # JSX factory implementations
 │  │  └─ elementBuilder.js
 │  ├─ components/       # JSX components (transpiled)
-│  │  └─ Card.jsx
+│  │  └─ Card.js
 │  ├─ style.module.css  # CSS module (consumed by JS)
 │  ├─ global.css        # Plain CSS asset
 │  └─ index.html        # HTML asset
