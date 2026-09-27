@@ -24,7 +24,7 @@ Based on the current codebase, NGAPACK is organized as follows:
 
 ```
 ngapack/
-├─ bundler/                # Core bundler implementation
+├─ src/                    # Core bundler implementation
 │  ├─ analyzer/            # Module analysis logic
 │  ├─ helper/              # Shared bundler utilities
 │  ├─ runtime/             # Browser runtime helpers
@@ -91,7 +91,7 @@ ngapack/
 
 ---
 
-### `bundler/analyzer.js`
+### `src/analyzer.js`
 
 Responsible for **static analysis only**.
 
@@ -111,7 +111,7 @@ Design constraints:
 
 ---
 
-### `bundler/index.js`
+### `src/index.js`
 
 The orchestration layer of NGAPACK.
 
@@ -130,7 +130,7 @@ Design notes:
 
 ---
 
-### `bundler/runtime/`
+### `src/runtime/`
 
 Browser-only runtime utilities injected into bundle output.
 
@@ -270,10 +270,10 @@ This server exists purely for demonstration and debugging purposes.
 
 At a high level, NGAPACK runs in four explicit phases:
 
-1. **Analyze**: `bundler/analyzer.js` parses entry modules and extracts dependency metadata (static, dynamic, and non-JS assets).
-2. **Graph**: `bundler/index.js` builds the dependency graph and assigns module identities within a namespace boundary.
+1. **Analyze**: `src/analyzer.js` parses entry modules and extracts dependency metadata (static, dynamic, and non-JS assets).
+2. **Graph**: `src/index.js` builds the dependency graph and assigns module identities within a namespace boundary.
 3. **Emit**: the bundler writes output chunks and asset files into the selected output directory.
-4. **Runtime**: `bundler/runtime/` helpers are injected so the browser can resolve modules, apply CSS/JSON modules, and load dynamic chunks at runtime.
+4. **Runtime**: `src/runtime/` helpers are injected so the browser can resolve modules, apply CSS/JSON modules, and load dynamic chunks at runtime.
 
 If you want to trace the full end-to-end behavior, use `test/index.js` - it is executable documentation that exercises all core behaviors.
 

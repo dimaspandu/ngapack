@@ -10,7 +10,7 @@
 import path from "path";
 import { fileURLToPath } from "url";
 
-import bundler from "../bundler/index.js";
+import bundler from "../src/index.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

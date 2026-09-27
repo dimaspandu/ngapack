@@ -47,7 +47,7 @@ Then open: http://localhost:2121
 `demo/bundle.js` calls the ngapack bundler directly:
 
 ```js
-import bundler from "../bundler/index.js";
+import bundler from "../src/index.js";
 
 await bundler({
   entry: path.join(__dirname, "src", "entry.js"),

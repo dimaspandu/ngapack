@@ -18,7 +18,7 @@ import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 
 // Import the bundler entry point
-import bundler from "../bundler/index.js";
+import bundler from "../src/index.js";
 
 /**
  * Resolve __filename and __dirname for ESM.

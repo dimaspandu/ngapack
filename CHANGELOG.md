@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ## [1.2.9] - 2026-09-26
 
 ### Added
-- New `transpileJSX` module in `bundler/analyzer` — minimal JSX-to-JS compiler that transforms JSX syntax into `d(tag, props, ...children)` call expressions.
+- New `transpileJSX` module in `src/analyzer` — minimal JSX-to-JS compiler that transforms JSX syntax into `d(tag, props, ...children)` call expressions.
   - Supports customizable factory name via `compileJSX(source, factory)` parameter or `/** @jsx name */` pragma in source.
   - Features: elements, self-closing tags, fragments (`<>...</>` → `factory.fragment(...)`), spread attributes, boolean attributes, expression containers, template literals in expressions.
 - Comprehensive test suite (20 test cases) covering basic JSX, custom factory, pragma parsing, fragments, error handling, and demo-level components.
