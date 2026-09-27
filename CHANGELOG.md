@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.3.1] - 2026-09-27
+
+### Added
+- JSX transpilation support via the `transpileJSX` module.
+  - Triggered by import assertions: `import x from "./foo.js" with { type: "jsx" };`
+  - The bundler runs `compileJSX()` on the target file before ESM→CJS conversion.
+  - Factory name resolved via `/** @jsx name */` pragma, or defaults to `"d"`.
+  - Exported `compileJSX` from `src/analyzer.js` for reuse.
+  - Documented in `README.md` under "How It Works (Flow)".
+
+### Changed
+- `createNode()` in `src/index.js` now accepts an `isJSX` flag to pre-process files via `compileJSX()`.
+- `createGraph()` detects `type: "jsx"` in import assertions and forwards the flag to child nodes.
+
+### Internal
+- Update `src/analyzer.js` barrel to re-export `compileJSX`.
+
+---
+
 ## [1.3.0] - 2026-09-27
 
 ### Changed

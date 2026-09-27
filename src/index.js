@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import { CSS_MINIFY_LEVEL } from "./analyzer/lib/minifier/css/constants.js";
 
 import {
+  compileJSX,
   convertESMToCJSWithMeta,
   minifyCSS,
   minifyHTML,
@@ -113,12 +114,15 @@ async function copyAssetToOutput({
 }
 
 /**
- * createNode(filename, separated)
- * --------------------------------
+ * createNode(filename, separated, isJSX)
+ * -------------------------------------
  * Reads and transforms a source file into a dependency graph node.
  * Each node represents a single module.
+ *
+ * When isJSX is true, the file is pre-processed by compileJSX()
+ * before ESM→CJS conversion, allowing JSX syntax in plain .js files.
  */
-function createNode(filename, separated = false) {
+function createNode(filename, separated = false, isJSX = false) {
   logger.info(`[NODE] Processing file: ${filename}`);
 
   const rawCode = fs.readFileSync(filename, "utf-8");
@@ -127,22 +131,40 @@ function createNode(filename, separated = false) {
   let extraction;
 
   /**
+   * Step 0: Optional JSX pre-processing.
+   *
+   * Triggered when the importer uses:
+   *   import x from "./foo.js" with { type: "jsx" };
+   *
+   * compileJSX() resolves the factory name internally:
+   *   1. explicit parameter (not available here)
+   *   2. an @jsx pragma comment in source
+   *   3. default "d"
+   */
+  let processedCode = rawCode;
+
+  if (isJSX) {
+    logger.info("[NODE] Transpiling JSX");
+    processedCode = compileJSX(rawCode);
+  }
+
+  /**
    * Step 1: Transform the source code based on file type.
    */
   const transformedCode = (() => {
     if (ext === ".css") {
-      return minifyCSS(rawCode, { level: CSS_MINIFY_LEVEL.SAFE });
+      return minifyCSS(processedCode, { level: CSS_MINIFY_LEVEL.SAFE });
     }
 
     if (ext === ".svg" || ext === ".xml" || ext === ".html") {
-      return minifyHTML(rawCode);
+      return minifyHTML(processedCode);
     }
 
     /**
      * JavaScript files:
      * Convert ESM to CommonJS and extract dependency metadata.
      */
-    extraction = convertESMToCJSWithMeta(rawCode);
+    extraction = convertESMToCJSWithMeta(processedCode);
     return extraction.code;
   })();
 
@@ -275,25 +297,36 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
         continue;
       }
 
-      /**
-       * Case 2: Local file imports.
-       */
+/**
+        * Case 2: Local file imports.
+        */
       const absolutePath = normalizeId(
         path.join(currentDir, relativePath)
       );
 
       const ext = path.extname(absolutePath);
       const isJS = [".js", ".mjs"].includes(ext);
+      const isJSX = ext === ".jsx";
       const isModule =
         isJS ||
+        isJSX ||
         (isAssetExtension(ext) && isModuleAsset(absolutePath));
+
+      /**
+       * Detect JSX via import assertion:
+       *   import x from "./foo.js" with { type: "jsx" };
+       */
+      const isJSXAssertion =
+        dependency.assertions &&
+        dependency.assertions.type === "jsx";
 
       if (isModule) {
         logger.info(`[GRAPH] Adding dependency module: ${absolutePath}`);
 
         const childNode = createNode(
           absolutePath,
-          dependency.type === "dynamic"
+          dependency.type === "dynamic",
+          isJSXAssertion
         );
 
         childNode.dependent = node.id;

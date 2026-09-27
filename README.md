@@ -275,6 +275,21 @@ At a high level, NGAPACK runs in four explicit phases:
 3. **Emit**: the bundler writes output chunks and asset files into the selected output directory.
 4. **Runtime**: `src/runtime/` helpers are injected so the browser can resolve modules, apply CSS/JSON modules, and load dynamic chunks at runtime.
 
+### JSX Transpilation
+
+NGAPACK can transpile JSX to JavaScript via the `transpileJSX` module. It is triggered by import assertions:
+
+```js
+import renderer from "./dom.js" with { type: "jsx" };
+```
+
+When the bundler encounters an import with `type: "jsx"`, it runs `compileJSX()` on the target file before ESM→CJS conversion. The factory name is resolved internally:
+
+1. `/** @jsx name */` pragma at the top of the file
+2. Default `"d"`
+
+The factory must be available at runtime — typically defined in the application code itself.
+
 If you want to trace the full end-to-end behavior, use `test/index.js` - it is executable documentation that exercises all core behaviors.
 
 ---
