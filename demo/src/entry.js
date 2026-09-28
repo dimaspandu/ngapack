@@ -6,6 +6,7 @@
  * - CSS modules
  * - non-JS assets (HTML, CSS)
  * - JSX transpilation with a custom factory
+ * - dynamic import with JSX assertion
  */
 
 import { greet } from "./greeting.js";
@@ -30,4 +31,24 @@ if (app) {
       body: "Bundled with a custom JSX factory."
     })
   );
+
+  /**
+   * Demonstrate dynamic import with JSX assertion.
+   * The component is loaded at runtime, not bundled statically.
+   */
+  const loadBtn = document.createElement("button");
+  loadBtn.textContent = "Load dynamic JSX component";
+  loadBtn.addEventListener("click", async () => {
+    const mod = await import("./components/DynamicCard.js", {
+      type: "jsx",
+      factory: "elementBuilder"
+    });
+    app.appendChild(
+      mod.default({
+        title: "Dynamic",
+        body: "Loaded via import() with { type: \"jsx\" }"
+      })
+    );
+  });
+  app.appendChild(loadBtn);
 }

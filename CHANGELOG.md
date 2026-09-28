@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.3.5] - 2026-09-28
+
+### Added
+- Dynamic JSX import support in demo.
+  - `entry.js` now demonstrates `import("./DynamicCard.js", { type: "jsx", factory: "elementBuilder" })`.
+  - The bundler extracts the dependency and applies the same transpilation pipeline as static imports.
+  - New `components/DynamicCard.js` component loaded at runtime.
+
+### Changed
+- Update `demo/README.md` to document dynamic JSX import.
+
+---
+
 ## [1.3.4] - 2026-09-27
 
 ### Changed

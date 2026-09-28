@@ -19,8 +19,9 @@ demo/
 │  ├─ greeting.js       # Plain ES module
 │  ├─ factories/        # JSX factory implementations
 │  │  └─ elementBuilder.js
-│  ├─ components/       # JSX components (transpiled)
-│  │  └─ Card.js
+│  ├─ components/       # JSX components (transpiled via assertion)
+│  │  ├─ Card.js
+│  │  └─ DynamicCard.js
 │  ├─ style.module.css  # CSS module (consumed by JS)
 │  ├─ global.css        # Plain CSS asset
 │  └─ index.html        # HTML asset
@@ -64,15 +65,28 @@ await bundler({
 
 ### JSX transpilation
 
-`entry.js` imports `Card.jsx` with a JSX assertion and a custom factory:
+`entry.js` imports `Card.js` with a JSX assertion and a custom factory:
 
 ```js
-import Card from "./components/Card.jsx" with { type: "jsx", factory: "elementBuilder" };
+import Card from "./components/Card.js" with { type: "jsx", factory: "elementBuilder" };
 ```
 
-The bundler runs `compileJSX()` on `Card.jsx` before ESM→CJS conversion. The `factory` key overrides the default `"d"` and any `/** @jsx */` pragma in the target file.
+The bundler runs `compileJSX()` on `Card.js` before ESM→CJS conversion. The `factory` key overrides the default `"d"` and any `/** @jsx */` pragma in the target file.
 
-The factory implementation lives in `factories/elementBuilder.js` and is imported normally by `Card.jsx`.
+The factory implementation lives in `factories/elementBuilder.js` and is imported normally by `Card.js`.
+
+### Dynamic JSX import
+
+`entry.js` also demonstrates a dynamic import with JSX assertion:
+
+```js
+const mod = await import("./components/DynamicCard.js" with {
+  type: "jsx",
+  factory: "elementBuilder"
+});
+```
+
+The component is loaded at runtime, not bundled statically. The bundler extracts the dependency and applies the same transpilation pipeline as static imports.
 
 ## Notes
 
