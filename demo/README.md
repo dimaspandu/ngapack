@@ -75,16 +75,24 @@ The bundler runs `compileJSX()` on `Card.js` before ESM→CJS conversion. The `f
 
 The factory implementation lives in `factories/elementBuilder.js` and is imported normally by `Card.js`.
 
+It also shows the two call shapes the transpiler emits:
+
+- `elementBuilder(tag, props, ...children)` for regular elements
+- `elementBuilder.fragment(...children)` for `<></>`, backed by `document.createDocumentFragment()`
+- SVG tags (`svg`, `path`, `circle`, ...) are routed to `document.createElementNS("http://www.w3.org/2000/svg", tag)`, with camelCase props such as `strokeWidth` written as kebab-case attributes and `viewBox`-style attributes kept verbatim
+
 ### Dynamic JSX import
 
 `entry.js` also demonstrates a dynamic import with JSX assertion:
 
 ```js
-const mod = await import("./components/DynamicCard.js" with {
+const mod = await import("./components/DynamicCard.js", {
   type: "jsx",
   factory: "elementBuilder"
 });
 ```
+
+The JSX options are passed as the second argument of `import()`; the `import(..., with { ... })` form is not supported by the tokenizer.
 
 The component is loaded at runtime, not bundled statically. The bundler extracts the dependency and applies the same transpilation pipeline as static imports.
 

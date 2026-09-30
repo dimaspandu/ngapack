@@ -295,7 +295,14 @@ When the bundler encounters an import with `type: "jsx"`, it runs `compileJSX()`
 2. `/** @jsx name */` pragma at the top of the target file
 3. Default `"d"`
 
-The factory must be available at runtime — typically defined in the application code itself.
+The factory must be available at runtime — typically defined in the application code itself. It is called in two forms:
+
+```js
+factory(tag, props, ...children)   // elements
+factory.fragment(...children)      // <>...</>
+```
+
+A fragment (`<>...</>`) is compiled into a call to `factory.fragment()`, so the factory must expose it as a property of the exported function. SVG and other namespaced elements are passed as a normal `tag` string — it is the factory's job to route them to `document.createElementNS()` if required. See `demo/src/factories/elementBuilder.js` for a reference implementation.
 
 If you want to trace the full end-to-end behavior, use `test/index.js` - it is executable documentation that exercises all core behaviors.
 

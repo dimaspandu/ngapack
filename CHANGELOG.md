@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.3.6] - 2026-09-30
+
+### Added
+- `demo/src/factories/elementBuilder.js` now supports the full JSX surface emitted by the transpiler.
+  - `elementBuilder.fragment(...children)` maps `<></>` to `document.createDocumentFragment()`.
+  - A literal `fragment` tag is handled the same way.
+  - SVG tags (`svg`, `path`, `circle`, `text`, ...) are created with `document.createElementNS("http://www.w3.org/2000/svg", tag)`.
+  - On SVG nodes `className` and `style` are written as attributes, and camelCase props such as `strokeWidth` are converted to kebab-case attributes, while canonical camelCase attributes (`viewBox`, `preserveAspectRatio`, ...) are kept verbatim.
+
+### Changed
+- `demo/src/components/Card.js` exercises a fragment and an inline SVG icon.
+- Documented the two factory call shapes (`factory(tag, props, ...children)` and `factory.fragment(...)`) in `README.md`.
+- Corrected `demo/README.md` to show the supported dynamic import form `import(path, { type: "jsx", factory: "..." })` instead of the unsupported `import(path, with { ... })`.
+
+---
+
 ## [1.3.5] - 2026-09-28
 
 ### Added
