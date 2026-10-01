@@ -31,6 +31,7 @@ src/
 │  ├─ ensureJsExtension.js
 │  ├─ escapeForDoubleQuote.js
 │  ├─ isAssetExtension.js
+│  ├─ isJSXExtension.js
 │  ├─ isModuleAsset.js
 │  ├─ logger.js
 │  ├─ mapToDistPath.js

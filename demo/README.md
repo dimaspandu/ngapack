@@ -8,7 +8,8 @@ A minimal, self-contained demo showing how ngapack bundles a simple web applicat
 - CSS modules (`.module.css`)
 - Non-JS asset emission (`.css`, `.html`)
 - Browser runtime injection
-- JSX transpilation with a custom factory
+- JSX transpilation driven by the `.jsx` extension
+- Dynamic import of a JSX module
 
 ## Project structure
 
@@ -19,9 +20,9 @@ demo/
 │  ├─ greeting.js       # Plain ES module
 │  ├─ factories/        # JSX factory implementations
 │  │  └─ elementBuilder.js
-│  ├─ components/       # JSX components (transpiled via assertion)
-│  │  ├─ Card.js
-│  │  └─ DynamicCard.js
+│  ├─ components/       # JSX components (transpiled via extension)
+│  │  ├─ Card.jsx
+│  │  └─ DynamicCard.jsx
 │  ├─ style.module.css  # CSS module (consumed by JS)
 │  ├─ global.css        # Plain CSS asset
 │  └─ index.html        # HTML asset
@@ -57,6 +58,7 @@ import bundler from "../src/index.js";
 
 await bundler({
   entry: path.join(__dirname, "src", "entry.js"),
+  jsxFactory: "elementBuilder",
   outputDir: path.join(__dirname, "public"),
   outputFilename: "entry.js",
   uglified: true
@@ -65,15 +67,15 @@ await bundler({
 
 ### JSX transpilation
 
-`entry.js` imports `Card.js` with a JSX assertion and a custom factory:
+JSX is enabled by file extension. `entry.js` imports `Card.jsx` with a plain import:
 
 ```js
-import Card from "./components/Card.js" with { type: "jsx", factory: "elementBuilder" };
+import Card from "./components/Card.jsx";
 ```
 
-The bundler runs `compileJSX()` on `Card.js` before ESM→CJS conversion. The `factory` key overrides the default `"d"` and any `/** @jsx */` pragma in the target file.
+The bundler runs `compileJSX()` on every `.jsx` file before ESM→CJS conversion. The factory name is set once through the bundler option `jsxFactory`, which overrides the default `"d"` and any `/** @jsx */` pragma in the target file.
 
-The factory implementation lives in `factories/elementBuilder.js` and is imported normally by `Card.js`.
+The factory implementation lives in `factories/elementBuilder.js` and is imported normally by `Card.jsx`.
 
 It also shows the two call shapes the transpiler emits:
 
@@ -83,18 +85,13 @@ It also shows the two call shapes the transpiler emits:
 
 ### Dynamic JSX import
 
-`entry.js` also demonstrates a dynamic import with JSX assertion:
+`entry.js` also demonstrates a dynamic import of a JSX module:
 
 ```js
-const mod = await import("./components/DynamicCard.js", {
-  type: "jsx",
-  factory: "elementBuilder"
-});
+const mod = await import("./components/DynamicCard.jsx");
 ```
 
-The JSX options are passed as the second argument of `import()`; the `import(..., with { ... })` form is not supported by the tokenizer.
-
-The component is loaded at runtime, not bundled statically. The bundler extracts the dependency and applies the same transpilation pipeline as static imports.
+No assertion is involved. The component is loaded at runtime, not bundled statically. The bundler extracts the dependency and applies the same transpilation pipeline as static imports; the emitted chunk is written as `components/DynamicCard.js`.
 
 ## Notes
 

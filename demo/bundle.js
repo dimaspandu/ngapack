@@ -17,6 +17,7 @@ const __dirname = path.dirname(__filename);
 
 await bundler({
   entry: path.join(__dirname, "src", "entry.js"),
+  jsxFactory: "elementBuilder",
   outputDir: path.join(__dirname, "public"),
   outputFilename: "entry.js",
   uglified: true

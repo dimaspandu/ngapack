@@ -16,6 +16,7 @@ import {
   ensureJsExtension,
   escapeForDoubleQuote,
   isAssetExtension,
+  isJSXExtension,
   isModuleAsset,
   logger,
   mapToDistPath,
@@ -119,15 +120,16 @@ async function copyAssetToOutput({
  * Reads and transforms a source file into a dependency graph node.
  * Each node represents a single module.
  *
- * JSX pre-processing is triggered only by import assertion:
- *   import x from "./foo.js" with { type: "jsx", factory: "h" };
+ * JSX pre-processing is triggered by file extension only:
+ *   import x from "./foo.jsx";
  *
- * compileJSX() resolves the factory name internally:
- *   1. explicit parameter (jsxFactory) — highest priority
+ * jsxFactory comes from the bundler-level `jsxFactory` option and is
+ * handed to compileJSX(), which resolves the factory name internally:
+ *   1. the bundler option — highest priority
  *   2. an @jsx pragma comment in source
  *   3. default "d"
  */
-function createNode(filename, separated = false, jsxFactory = false) {
+function createNode(filename, separated = false, jsxFactory = undefined) {
   logger.info(`[NODE] Processing file: ${filename}`);
 
   const rawCode = fs.readFileSync(filename, "utf-8");
@@ -136,17 +138,17 @@ function createNode(filename, separated = false, jsxFactory = false) {
   let extraction;
 
   /**
-   * Step 0: Optional JSX pre-processing.
+   * Step 0: JSX pre-processing.
    *
-   * Only triggered when the importer uses:
-   *   import x from "./foo.js" with { type: "jsx", factory: "h" };
+   * Only triggered for JSX extensions (".jsx").
    */
   let processedCode = rawCode;
 
-  if (jsxFactory) {
-    const factory = jsxFactory === true ? undefined : jsxFactory;
-    logger.info(`[NODE] Transpiling JSX (factory: ${factory || "d"})`);
-    processedCode = compileJSX(rawCode, factory);
+  if (isJSXExtension(ext)) {
+    logger.info(
+      `[NODE] Transpiling JSX (factory: ${jsxFactory || "@jsx pragma or default d"})`
+    );
+    processedCode = compileJSX(rawCode, jsxFactory);
   }
 
   /**
@@ -236,14 +238,17 @@ function createNode(filename, separated = false, jsxFactory = false) {
 }
 
 /**
- * createGraph(entry, outputFilePath, defaultNamespace)
- * ----------------------------------------------------
+ * createGraph(entry, outputFilePath, defaultNamespace, jsxFactory)
+ * ----------------------------------------------------------------
  * Builds a dependency graph starting from the entry file.
+ *
+ * jsxFactory is the bundler-level JSX factory name applied to every
+ * ".jsx" module found in the graph.
  */
-function createGraph(entry, outputFilePath, defaultNamespace) {
+function createGraph(entry, outputFilePath, defaultNamespace, jsxFactory) {
   logger.info("[GRAPH] Creating dependency graph from entry:", entry);
 
-  const entryNode = createNode(entry);
+  const entryNode = createNode(entry, false, jsxFactory);
   const queue = [entryNode];
 
   const baseDir = path.dirname(path.resolve(entry)).replaceAll("\\", "/");
@@ -305,23 +310,23 @@ function createGraph(entry, outputFilePath, defaultNamespace) {
         path.join(currentDir, relativePath)
       );
 
-      const ext = path.extname(absolutePath);
-      const isJS = [".js", ".mjs"].includes(ext);
+const ext = path.extname(absolutePath);
+      const isJS = [".js", ".mjs", ".jsx"].includes(ext);
       const isModule =
         isJS ||
         (isAssetExtension(ext) && isModuleAsset(absolutePath));
 
       /**
-       * Detect JSX via import assertion only:
-       *   import x from "./foo.js" with { type: "jsx", factory: "h" };
-       *
-       * The optional `factory` key overrides the default "d" and any
-       * @jsx pragma comment in the target file.
+       * A `type: "jsx"` import assertion is no longer how JSX is enabled.
+       * JSX is detected by the ".jsx" extension, and the factory name is
+       * configured once through the bundler-level `jsxFactory` option.
        */
-      const jsxFactory =
-        dependency.assertions &&
-        dependency.assertions.type === "jsx" &&
-        (dependency.assertions.factory || true);
+      if (dependency.assertions && dependency.assertions.type === "jsx") {
+        logger.warn(
+          `[GRAPH] Ignoring deprecated "type: \\"jsx\\"" assertion: ${relativePath}`,
+          { importer: node.filename }
+        );
+      }
 
       if (isModule) {
         logger.info(`[GRAPH] Adding dependency module: ${absolutePath}`);
@@ -624,10 +629,22 @@ function generateOutput(outputFilePath, code) {
  * ---------------
  * Bundler entry point.
  * Orchestrates graph creation, bundling, minification, and output.
+ *
+ * Options:
+ *  - entry           : absolute path to the entry module
+ *  - outputDir       : directory that receives generated bundles and assets
+ *  - outputFilename  : entry bundle filename (default "index.js")
+ *  - namespace       : module namespace prefix (default "&")
+ *  - host            : runtime host override
+ *  - jsxFactory      : JSX factory name applied to every ".jsx" module.
+ *                      When omitted, an @jsx pragma in the target file is
+ *                      used, otherwise the default "d".
+ *  - uglified        : minify the generated output (default false)
  */
 export default async function main({
   entry,
   host,
+  jsxFactory,
   namespace = "&",
   outputDir,
   outputFilename = "index.js",
@@ -639,7 +656,7 @@ export default async function main({
     path.join(outputDir, outputFilename)
   );
 
-  const graph = createGraph(entry, outputFilePath, namespace);
+  const graph = createGraph(entry, outputFilePath, namespace, jsxFactory);
   const bundles = createBundle(graph, host);
 
   for (const id in bundles) {

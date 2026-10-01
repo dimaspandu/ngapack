@@ -161,6 +161,7 @@
     return (
       ext === ".js"  ||
       ext === ".mjs" ||
+      ext === ".jsx"||
       ext === ".json"||
       ext === ".css" ||
       ext === ".svg" ||

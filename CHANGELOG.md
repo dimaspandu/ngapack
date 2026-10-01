@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.4.0] - 2026-10-01
+
+### Changed (breaking)
+- JSX is now enabled by file extension instead of import assertion.
+  - Any dependency that resolves to a `.jsx` file is transpiled with `compileJSX()`.
+  - `import x from "./foo.js" with { type: "jsx", factory: "h" }` no longer enables transpilation; the assertion is ignored and reported as a warning.
+- The JSX factory is configured once through the new bundler-level `jsxFactory` option.
+
+### Added
+- `jsxFactory` bundler option, applied to every `.jsx` module in the graph.
+  - Resolution order: bundler option > `/** @jsx name */` pragma > `"d"`.
+- `src/helper/isJSXExtension.js` — single source of truth for JSX extension detection.
+- `.jsx` added to the JavaScript module extension list in `src/index.js`.
+- `.jsx` accepted by the runtime extension allowlist (`src/runtime/template.js`, `src/runtime/runtime.js`), so dynamically imported JSX chunks load with their emitted `.js` filename.
+
+### Demo
+- `demo/src/components/Card.js` → `Card.jsx`, `demo/src/components/DynamicCard.js` → `DynamicCard.jsx`.
+- `demo/src/entry.js` uses plain `import Card from "./components/Card.jsx"` and `import("./components/DynamicCard.jsx")`.
+- `demo/bundle.js` passes `jsxFactory: "elementBuilder"`.
+
+---
+
 ## [1.3.6] - 2026-09-30
 
 ### Added

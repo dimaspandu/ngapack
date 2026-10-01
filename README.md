@@ -277,23 +277,30 @@ At a high level, NGAPACK runs in four explicit phases:
 
 ### JSX Transpilation
 
-NGAPACK can transpile JSX to JavaScript via the `transpileJSX` module. It is triggered by import assertions:
+NGAPACK transpiles JSX via the `transpileJSX` module. JSX is enabled by file extension: any dependency that resolves to a `.jsx` file is compiled with `compileJSX()` before ESM→CJS conversion.
 
 ```js
-import renderer from "./dom.js" with { type: "jsx" };
+import Card from "./components/Card.jsx";        // transpiled
+import Card from "./components/Card.js";         // plain JavaScript
 ```
 
-The optional `factory` key overrides the default `"d"`:
+The factory name is configured once, at the bundler level:
 
 ```js
-import renderer from "./dom.js" with { type: "jsx", factory: "elementBuilder" };
+await bundler({
+  entry,
+  outputDir,
+  jsxFactory: "elementBuilder"
+});
 ```
 
-When the bundler encounters an import with `type: "jsx"`, it runs `compileJSX()` on the target file before ESM→CJS conversion. The factory name is resolved in this order:
+The factory name is resolved in this order:
 
-1. `factory` key in the import assertion (highest priority)
+1. The bundler-level `jsxFactory` option (highest priority)
 2. `/** @jsx name */` pragma at the top of the target file
 3. Default `"d"`
+
+A legacy `with { type: "jsx" }` import assertion no longer enables transpilation and is ignored with a warning; use the `.jsx` extension instead.
 
 The factory must be available at runtime — typically defined in the application code itself. It is called in two forms:
 
