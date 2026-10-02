@@ -1,4 +1,5 @@
 import transpileExportTokensToCJS from "../main.js";
+import tokenizer from "../../tokenizer/main.js";
 import runTest from "../../../utils/tester.js";
 
 function runExportTranspileTest(tokens) {
@@ -9,6 +10,16 @@ function runExportTranspileTest(tokens) {
   );
 
   return transpileExportTokensToCJS(sanitizedTokens);
+}
+
+/**
+ * Same as runExportTranspileTest, but tokenizes real source first so tokens
+ * carry `line` info. getExportBlockEndIndex relies on `line` to detect
+ * statement boundaries, so line-aware source is required to cover the
+ * multiline continuation path.
+ */
+function runExportTranspileFromSource(source) {
+  return runExportTranspileTest(tokenizer(source));
 }
 
 /* ============================================================================
@@ -1101,6 +1112,211 @@ runTest(
     { type: "punctuator", value: "{" },
     { type: "identifier", value: "dynamicValue2" },
     { type: "punctuator", value: "}" },
+    { type: "punctuator", value: ";" }
+  ],
+  true
+);
+
+
+/* ============================================================================
+ * 10. MULTILINE EXPORT ASSIGNMENT (LINE-AWARE TOKENS)
+ *
+ * These cases use the real tokenizer so tokens carry `line` info.
+ * A line break right after an operator is NOT a statement terminator:
+ * the expression simply continues on the next line.
+ * ============================================================================ */
+
+runTest(
+  "Export const arrow function, line break after =",
+  runExportTranspileFromSource(
+    "export const createDOMPP =\n  () => installDOMPP();"
+  ),
+  [
+    { type: "keyword", value: "const" },
+    { type: "identifier", value: "createDOMPP" },
+    { type: "punctuator", value: "=" },
+    { type: "punctuator", value: "(" },
+    { type: "punctuator", value: ")" },
+    { type: "punctuator", value: "=>" },
+    { type: "identifier", value: "installDOMPP" },
+    { type: "punctuator", value: "(" },
+    { type: "punctuator", value: ")" },
+    { type: "punctuator", value: ";" },
+
+    { type: "identifier", value: "exports" },
+    { type: "punctuator", value: "." },
+    { type: "identifier", value: "createDOMPP" },
+    { type: "punctuator", value: "=" },
+    { type: "identifier", value: "createDOMPP" },
+    { type: "punctuator", value: ";" }
+  ]
+);
+
+runTest(
+  "Export const arrow with logical operator across lines",
+  runExportTranspileFromSource(
+    "export const isNodeLike = (value) =>\n" +
+    '  typeof Node !== "undefined" &&\n' +
+    "  value instanceof Node;"
+  ),
+  [
+    { type: "keyword", value: "const" },
+    { type: "identifier", value: "isNodeLike" },
+    { type: "punctuator", value: "=" },
+    { type: "punctuator", value: "(" },
+    { type: "identifier", value: "value" },
+    { type: "punctuator", value: ")" },
+    { type: "punctuator", value: "=>" },
+    { type: "keyword", value: "typeof" },
+    { type: "identifier", value: "Node" },
+    { type: "punctuator", value: "!==" },
+    { type: "string", value: '"undefined"' },
+    { type: "punctuator", value: "&&" },
+    { type: "identifier", value: "value" },
+    { type: "keyword", value: "instanceof" },
+    { type: "identifier", value: "Node" },
+    { type: "punctuator", value: ";" },
+
+    { type: "identifier", value: "exports" },
+    { type: "punctuator", value: "." },
+    { type: "identifier", value: "isNodeLike" },
+    { type: "punctuator", value: "=" },
+    { type: "identifier", value: "isNodeLike" },
+    { type: "punctuator", value: ";" }
+  ]
+);
+
+runTest(
+  "Export const arrow with multiline call arguments",
+  runExportTranspileFromSource(
+    "export const toCamelCase = (cssProp) =>\n" +
+    "  cssProp.replace(\n" +
+    "    /-([a-z])/g,\n" +
+    "    (_, ch) => ch.toUpperCase()\n" +
+    "  );"
+  ),
+  [
+    { type: "keyword", value: "const" },
+    { type: "identifier", value: "toCamelCase" },
+    { type: "punctuator", value: "=" },
+    { type: "punctuator", value: "(" },
+    { type: "identifier", value: "cssProp" },
+    { type: "punctuator", value: ")" },
+    { type: "punctuator", value: "=>" },
+    { type: "identifier", value: "cssProp" },
+    { type: "punctuator", value: "." },
+    { type: "identifier", value: "replace" },
+    { type: "punctuator", value: "(" },
+    { type: "regex", value: "/-([a-z])/g" },
+    { type: "punctuator", value: "," },
+    { type: "punctuator", value: "(" },
+    { type: "identifier", value: "_" },
+    { type: "punctuator", value: "," },
+    { type: "identifier", value: "ch" },
+    { type: "punctuator", value: ")" },
+    { type: "punctuator", value: "=>" },
+    { type: "identifier", value: "ch" },
+    { type: "punctuator", value: "." },
+    { type: "identifier", value: "toUpperCase" },
+    { type: "punctuator", value: "(" },
+    { type: "punctuator", value: ")" },
+    { type: "punctuator", value: ")" },
+    { type: "punctuator", value: ";" },
+
+    { type: "identifier", value: "exports" },
+    { type: "punctuator", value: "." },
+    { type: "identifier", value: "toCamelCase" },
+    { type: "punctuator", value: "=" },
+    { type: "identifier", value: "toCamelCase" },
+    { type: "punctuator", value: ";" }
+  ]
+);
+
+runTest(
+  "Export const arrow with multiline block body",
+  runExportTranspileFromSource(
+    "export const toNodeList = (values) => {\n" +
+    "  const out = [];\n" +
+    "  values.forEach((v) => out.push(v));\n" +
+    "  return out;\n" +
+    "};"
+  ),
+  [
+    { type: "keyword", value: "const" },
+    { type: "identifier", value: "toNodeList" },
+    { type: "punctuator", value: "=" },
+    { type: "punctuator", value: "(" },
+    { type: "identifier", value: "values" },
+    { type: "punctuator", value: ")" },
+    { type: "punctuator", value: "=>" },
+    { type: "punctuator", value: "{" },
+    { type: "keyword", value: "const" },
+    { type: "identifier", value: "out" },
+    { type: "punctuator", value: "=" },
+    { type: "punctuator", value: "[" },
+    { type: "punctuator", value: "]" },
+    { type: "punctuator", value: ";" },
+    { type: "identifier", value: "values" },
+    { type: "punctuator", value: "." },
+    { type: "identifier", value: "forEach" },
+    { type: "punctuator", value: "(" },
+    { type: "punctuator", value: "(" },
+    { type: "identifier", value: "v" },
+    { type: "punctuator", value: ")" },
+    { type: "punctuator", value: "=>" },
+    { type: "identifier", value: "out" },
+    { type: "punctuator", value: "." },
+    { type: "identifier", value: "push" },
+    { type: "punctuator", value: "(" },
+    { type: "identifier", value: "v" },
+    { type: "punctuator", value: ")" },
+    { type: "punctuator", value: ")" },
+    { type: "punctuator", value: ";" },
+    { type: "keyword", value: "return" },
+    { type: "identifier", value: "out" },
+    { type: "punctuator", value: ";" },
+    { type: "punctuator", value: "}" },
+    { type: "punctuator", value: ";" },
+
+    { type: "identifier", value: "exports" },
+    { type: "punctuator", value: "." },
+    { type: "identifier", value: "toNodeList" },
+    { type: "punctuator", value: "=" },
+    { type: "identifier", value: "toNodeList" },
+    { type: "punctuator", value: ";" }
+  ]
+);
+
+runTest(
+  "Export const simple value still ends at line break",
+  runExportTranspileFromSource(
+    "export const answer = 42;\nexport const other = 7;"
+  ),
+  [
+    { type: "keyword", value: "const" },
+    { type: "identifier", value: "answer" },
+    { type: "punctuator", value: "=" },
+    { type: "number", value: "42" },
+    { type: "punctuator", value: ";" },
+
+    { type: "keyword", value: "const" },
+    { type: "identifier", value: "other" },
+    { type: "punctuator", value: "=" },
+    { type: "number", value: "7" },
+    { type: "punctuator", value: ";" },
+
+    { type: "identifier", value: "exports" },
+    { type: "punctuator", value: "." },
+    { type: "identifier", value: "answer" },
+    { type: "punctuator", value: "=" },
+    { type: "identifier", value: "answer" },
+    { type: "punctuator", value: ";" },
+
+    { type: "identifier", value: "exports" },
+    { type: "punctuator", value: "." },
+    { type: "identifier", value: "other" },
+    { type: "punctuator", value: "=" },
+    { type: "identifier", value: "other" },
     { type: "punctuator", value: ";" }
   ],
   true

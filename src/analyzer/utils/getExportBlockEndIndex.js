@@ -184,12 +184,58 @@ function findMatching(tokens, startIndex, open, close) {
 }
 
 /**
+ * Operators that always require a right-hand operand.
+ *
+ * A line break right after one of these is NOT a statement terminator: the
+ * expression is still incomplete and continues on the following line, e.g.
+ *
+ *   export const createDOMPP =
+ *     () => installDOMPP();
+ *
+ *   export const isNodeLike = (value) =>
+ *     typeof Node !== "undefined" &&
+ *     value instanceof Node;
+ */
+const CONTINUATION_OPERATORS = new Set([
+  "=",
+  "=>",
+  ",",
+  "+",
+  "-",
+  "*",
+  "/",
+  "%",
+  "**",
+  "&&",
+  "||",
+  "??",
+  "?",
+  ":",
+  "==",
+  "===",
+  "!=",
+  "!==",
+  "<",
+  ">",
+  "<=",
+  ">=",
+  "+=",
+  "-=",
+  "*=",
+  "/=",
+  "%=",
+  "&&=",
+  "||=",
+  "??="
+]);
+
+/**
  * findStatementEnd(tokens, i)
  *
  * Robust statement end finder:
  *  - semicolon
  *  - braces / parentheses / arrays / objects
- *  - multiline detection
+ *  - multiline detection (only when the expression is actually complete)
  */
 function findStatementEnd(tokens, i) {
   let last = tokens.length - 1;
@@ -201,6 +247,10 @@ function findStatementEnd(tokens, i) {
     if (t.value === "(") { i = findMatching(tokens, i, "(", ")"); continue; }
     if (t.value === "{") { i = findMatching(tokens, i, "{", "}"); continue; }
     if (t.value === "[") { i = findMatching(tokens, i, "[", "]"); continue; }
+
+    // An operator awaiting its right-hand operand cannot end the statement,
+    // so a following line break must not be treated as a terminator.
+    if (CONTINUATION_OPERATORS.has(t.value)) continue;
 
     const next = tokens[i + 1];
     if (next && next.line > t.line) return i;

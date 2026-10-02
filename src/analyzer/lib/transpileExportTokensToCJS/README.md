@@ -223,7 +223,31 @@ Finds matching `}` with a classic brace-balance scan.
 
 Handles export statements with trailing metadata objects.
 
-### 5.3 Temporary module aliases
+### 5.3 `getExportBlockEndIndex(tokens, start)`
+
+Locates the end of a whole `export` statement, dispatching by shape (`default`, `{ ... }`, `*`, `const/let/var`, `function`, `class`).
+
+For declarations it delegates to an internal `findStatementEnd` scanner, which resolves the boundary in this priority order:
+
+1. an explicit `;`
+2. balanced `(` … `)`, `{` … `}`, `[` … `]` groups (which also cover arrow block bodies)
+3. a line break before the next token
+4. otherwise, the end of the token stream
+
+Rule 3 relies on the tokenizer's `line` field, so tokens produced by hand without positional data disable it entirely. Crucially, a line break only terminates the statement when the current token is *not* an operator still awaiting its right-hand operand. Otherwise a wrapped expression would be cut in half:
+
+```js
+export const createDOMPP =
+  () => installDOMPP();          // break after "=" — still one statement
+
+export const isNodeLike = (v) =>
+  typeof Node !== "undefined" && // break after "&&" — still one statement
+  v instanceof Node;
+```
+
+Treating these breaks as terminators produced invalid output such as `const createDOMPP = ;() => installDOMPP();`.
+
+### 5.4 Temporary module aliases
 
 Re-export-from modules generate an auto-generated alias:
 

@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+# [1.2.7] - 2026-10-02
+
+## Fixed
+
+- Fixed multiline `export const/let/var` assignments being truncated when the initializer continued on the next line, which emitted invalid code such as `const createDOMPP = ;() => installDOMPP();`.
+  - `getExportBlockEndIndex` treated any line break as a statement terminator, so a break directly after an operator awaiting its right-hand operand ended the statement early.
+  - The break heuristic is now skipped for continuation operators (assignment, `=>`, logical/comparison operators, ternary, comma, compound assignment).
+  - Explicit `;` detection and balanced bracket scanning are unchanged, so single-line statements and block-bodied arrows behave exactly as before.
+
+## Added
+
+- Added regression tests for multiline export assignments in `transpileExportTokensToCJS`:
+  - `Export const arrow function, line break after =`
+  - `Export const arrow with logical operator across lines`
+  - `Export const arrow with multiline call arguments`
+  - `Export const arrow with multiline block body`
+  - `Export const simple value still ends at line break` (guards against over-eager continuation)
+- Added `runExportTranspileFromSource` test helper that tokenizes real source first, so tests carry `line` info. Previously all tests in this module used hand-written tokens without positional data, which silently disabled the line-break heuristic and left this path untested.
+
+## Changed
+
+- Documented `getExportBlockEndIndex` and its statement-boundary rules in `lib/transpileExportTokensToCJS/README.md`.
+
+---
+
 # [1.2.6] - 2026-09-26
 
 ## Added

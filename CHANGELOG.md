@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.4.1] - 2026-10-02
+
+### Fixed
+- Multiline `export const/let/var` assignments are no longer truncated when the initializer continues on the next line (`src/analyzer/utils/getExportBlockEndIndex.js`).
+  - The statement-boundary scanner treated any line break as a terminator, so a break directly after an operator still awaiting its right-hand operand produced invalid output such as `const createDOMPP = ;() => installDOMPP();`.
+  - The line-break heuristic is now skipped for continuation operators (assignment, `=>`, comma, arithmetic, logical/comparison, ternary, compound assignment).
+  - Explicit `;` detection and balanced-bracket scanning are unchanged, so single-line statements and block-bodied arrows behave exactly as before.
+
+### Added
+- Regression tests for multiline export assignments in `src/analyzer/lib/transpileExportTokensToCJS/test/index.js`, including a guard that simple values still terminate at a line break.
+- `runExportTranspileFromSource` test helper that tokenizes real source first, so tests carry `line` info and actually exercise the line-break heuristic.
+
+### Changed
+- Documented `getExportBlockEndIndex` and its statement-boundary rules in `src/analyzer/lib/transpileExportTokensToCJS/README.md`.
+- Recorded the analyzer change in `src/analyzer/CHANGELOG.md` (1.2.7).
+
+---
+
 ## [1.4.0] - 2026-10-01
 
 ### Changed (breaking)
