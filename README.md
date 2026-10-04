@@ -25,12 +25,14 @@ Based on the current codebase, NGAPACK is organized as follows:
 ```
 ngapack/
 ├─ src/                    # Core bundler implementation
-│  ├─ analyzer/            # Module analysis logic
 │  ├─ helper/              # Shared bundler utilities
-│  ├─ runtime/             # Browser runtime helpers
-│  ├─ analyzer.js
+│  ├─ analyzer.js          # Barrel: re-exports from libs/js-analyzer
 │  ├─ helper.js
 │  └─ index.js             # Bundler entry point
+│
+├─ libs/                   # External library sources (git submodules)
+│  ├─ djs/                 # Runtime + module registry
+│  └─ js-analyzer/          # Static analysis (ESM/CJS/JSX/CSS/HTML/JSON)
 │
 ├─ demo/                   # Minimal end-to-end bundling demo
 │  ├─ src/                 # Source application
@@ -78,24 +80,47 @@ ngapack/
 
 ---
 
+## Setup (first clone)
+
+NGAPACK tracks its shared libraries as **git submodules** to stay lightweight
+and `node_modules`-free. After cloning, initialize them once:
+
+```bash
+git submodule update --init --recursive
+```
+
+> Tip: `npm install` runs a `prepare` hook that does the same automatically
+> for clones taken straight from this repo.
+
+### Library sources
+
+* Runtime + module registry → [dimaspandu/djs](https://github.com/dimaspandu/djs) (`libs/djs`)
+* Static analysis (ESM/CJS/JSX/CSS/HTML/JSON) → [dimaspandu/js-analyzer](https://github.com/dimaspandu/js-analyzer) (`libs/js-analyzer`)
+
+These are tracked verbatim as submodules; NGAPACK consumes their analysis and
+runtime logic directly instead of copying it into `src/`.
+
+---
+
 ## Core Components
 
 > **Upstream references**
->
-> * Analyzer concepts are adapted from:
->   [https://github.com/dimaspandu/js-analyzer](https://github.com/dimaspandu/js-analyzer)
-> * Runtime loader & registry ideas are adapted from:
->   [https://github.com/dimaspandu/djs](https://github.com/dimaspandu/djs)
->
-> These repositories act as conceptual references. NGAPACK intentionally simplifies and refactors the ideas to fit its experimental goals.
+> These libraries are consumed verbatim as git submodules (see *Library sources*
+> above) rather than being copied into `src/`.
 
 ---
 
 ### `src/analyzer.js`
 
-Responsible for **static analysis only**.
+Thin barrel that re-exports the static-analysis primitives implemented in
+`libs/js-analyzer`. It is the single boundary NGAPACK's orchestration layer
+relies on for tokenization, module extraction, ESM→CJS conversion, JSX
+transpilation, and minification.
 
-Capabilities:
+The bundled source lives in `libs/js-analyzer/lib/*` (as a git submodule) and
+is consumed in place — no vendored copy is kept under `src/analyzer/`.
+
+Capabilities (delegated to `js-analyzer`):
 
 * Parses ES modules
 * Extracts dependency metadata
@@ -130,7 +155,7 @@ Design notes:
 
 ---
 
-### `src/runtime/`
+### `libs/djs` (runtime)
 
 Browser-only runtime utilities injected into bundle output.
 
@@ -146,6 +171,9 @@ Rules:
 * Must not rely on Node.js APIs
 * Must work in plain browser environments
 * Should degrade gracefully when features are unavailable
+
+The runtime template consumed by NGAPACK is `libs/djs/src/template.js`, loaded
+by `src/index.js` at bundle-emit time and injected into the entry bundle.
 
 ---
 
@@ -270,10 +298,10 @@ This server exists purely for demonstration and debugging purposes.
 
 At a high level, NGAPACK runs in four explicit phases:
 
-1. **Analyze**: `src/analyzer.js` parses entry modules and extracts dependency metadata (static, dynamic, and non-JS assets).
+1. **Analyze**: `src/analyzer.js` parses entry modules and extracts dependency metadata (static, dynamic, and non-JS assets). It re-exports from `libs/js-analyzer`.
 2. **Graph**: `src/index.js` builds the dependency graph and assigns module identities within a namespace boundary.
 3. **Emit**: the bundler writes output chunks and asset files into the selected output directory.
-4. **Runtime**: `src/runtime/` helpers are injected so the browser can resolve modules, apply CSS/JSON modules, and load dynamic chunks at runtime.
+4. **Runtime**: `libs/djs/src/template.js` is injected into the entry bundle so the browser can resolve modules, apply CSS/JSON modules, and load dynamic chunks at runtime.
 
 ### JSX Transpilation
 

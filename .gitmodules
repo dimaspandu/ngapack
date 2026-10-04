@@ -1,0 +1,6 @@
+[submodule "libs/djs"]
+	path = libs/djs
+	url = https://github.com/dimaspandu/djs.git
+[submodule "libs/js-analyzer"]
+	path = libs/js-analyzer
+	url = https://github.com/dimaspandu/js-analyzer.git

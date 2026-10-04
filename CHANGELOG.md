@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [2.0.0] - 2026-10-04
+
+### Changed (breaking)
+- Vendored library sources are now tracked as **git submodules** instead of being
+  copied into `src/`.
+  - `src/runtime/*` → `libs/djs/src/*` (`dimaspandu/djs`)
+  - `src/analyzer/*` → `libs/js-analyzer/*` (`dimaspandu/js-analyzer`)
+- The `src/runtime/` and `src/analyzer/` directories have been removed.
+  - `src/index.js` now reads the runtime template from `libs/djs/src/template.js`.
+  - `src/analyzer.js` is now a thin barrel that re-exports from `libs/js-analyzer/lib/*`.
+
+### Added
+- `libs/` directory with `djs` and `js-analyzer` submodules.
+- `.gitmodules` declaring both submodules.
+- `prepare` npm hook (`git submodule update --init --recursive`) so a fresh
+  `npm install` from this repo initializes the library sources automatically.
+- `README.md` "Setup (first clone)" section with submodule instructions.
+
+### Internal
+- Pins `libs/djs` to `v1.1.0` (`1048212`) and `libs/js-analyzer` to `v1.2.9` (`0004002`).
+- `npm run bundle` (demo) and the runtime `.jsx` allowlist continue to pass;
+  `.jsx` support is now provided by upstream `djs` rather than a local patch.
+
+---
+
 ## [1.4.1] - 2026-10-02
 
 ### Fixed

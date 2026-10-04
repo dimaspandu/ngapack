@@ -2,7 +2,7 @@ import fs from "fs";
 import fsp from "fs/promises";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
-import { CSS_MINIFY_LEVEL } from "./analyzer/lib/minifier/css/constants.js";
+import { CSS_MINIFY_LEVEL } from "../libs/js-analyzer/lib/minifier/css/constants.js";
 
 import {
   compileJSX,
@@ -38,7 +38,7 @@ const __dirname = dirname(__filename);
  * This runtime is injected only into the entry bundle.
  */
 const RUNTIME_CODE = (host, modules, entry) => {
-  const runtimeTemplatePath = path.join(__dirname, "runtime/template.js");
+  const runtimeTemplatePath = path.join(__dirname, "..", "libs/djs/src/template.js");
 
   logger.info("[RUNTIME] Loading runtime template:", runtimeTemplatePath);
 

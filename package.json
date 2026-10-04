@@ -1,13 +1,14 @@
 {
   "name": "ngapack",
-  "version": "1.4.1",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "description": "A lightweight experimental JavaScript bundler.",
   "scripts": {
     "bundle": "node demo/bundle.js",
     "serve": "node demo/serve.js",
-    "test": "node test"
+    "test": "node test",
+    "prepare": "git submodule update --init --recursive"
   },
   "engines": {
     "node": ">=22.7"
