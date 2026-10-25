@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [2.1.0] - 2026-10-25
+
+### Changed
+- Bump `libs/js-analyzer` submodule from `v1.2.9` (`0004002`) to `v1.3.2` (`222e693`).
+  - feat(jsx): compile uppercase tags to component function references.
+  - fix(jsx): transpile JSX inside expressions.
+  - fix(jsx): support whitespace in spread attributes.
+- `src/analyzer.js` barrel unchanged; behavior flows through `libs/js-analyzer/lib/transpileJSX`.
+
+### Internal
+- Verified `npm run bundle` (demo) still succeeds end-to-end after the bump.
+
+---
+
 ## [2.0.0] - 2026-10-04
 
 ### Changed (breaking)
